@@ -1,12 +1,18 @@
+"use client";
+
 import Link from "next/link";
 
+import { useSiteLocale } from "@/lib/siteLocale";
+
 const LINKS = [
-  { href: "/terms", label: "이용약관" },
-  { href: "/privacy", label: "개인정보처리방침" },
-  { href: "/data-deletion", label: "데이터 삭제 안내" },
+  { href: "/terms", label: { ko: "이용약관", en: "Terms" } },
+  { href: "/privacy", label: { ko: "개인정보처리방침", en: "Privacy" } },
+  { href: "/data-deletion", label: { ko: "데이터 삭제 안내", en: "Data deletion" } },
 ];
 
 export default function LegalFooter({ compact = false }: { compact?: boolean }) {
+  const { locale } = useSiteLocale();
+
   return (
     <footer
       className={[
@@ -15,7 +21,9 @@ export default function LegalFooter({ compact = false }: { compact?: boolean }) 
       ].join(" ")}
     >
       <div className="rounded-2xl border border-black/10 bg-white/70 px-4 py-4 backdrop-blur-sm md:flex md:items-center md:justify-between">
-        <p className="text-xs text-black/45">© {new Date().getFullYear()} MakeDoc Studio. All rights reserved.</p>
+        <p className="text-xs text-black/45">
+          © {new Date().getFullYear()} MakeDoc Studio. All rights reserved.
+        </p>
         <div className="mt-2 flex flex-wrap items-center gap-3 md:mt-0">
           {LINKS.map((link) => (
             <Link
@@ -23,14 +31,14 @@ export default function LegalFooter({ compact = false }: { compact?: boolean }) 
               href={link.href}
               className="text-xs font-medium text-black/65 underline-offset-2 hover:text-black hover:underline"
             >
-              {link.label}
+              {link.label[locale]}
             </Link>
           ))}
           <a
             href="mailto:support@makedoc.studio"
             className="text-xs font-medium text-black/65 underline-offset-2 hover:text-black hover:underline"
           >
-            문의 support@makedoc.studio
+            {locale === "ko" ? "문의 support@makedoc.studio" : "Contact support@makedoc.studio"}
           </a>
         </div>
       </div>
