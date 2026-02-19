@@ -1,0 +1,668 @@
+{
+  "schemaVersion": "mkdoc.foodservice.survey.v2",
+  "stages": {
+    "pre": {
+      "title": "무료 3분 진단 (6문항)",
+      "description": "결제 전에는 미리보기 점수 + 병목 1개만 공개합니다.",
+      "questionIds": [
+        "q1_operation_mode",
+        "q2_open_age",
+        "q3_avg_ticket",
+        "q4_fixed_cost",
+        "q5_variable_rate",
+        "q6_current_metric"
+      ]
+    },
+    "post": {
+      "title": "결제 후 추가 질문 (정밀 진단)",
+      "description": "키워드(수요/입찰) + 전환(플레이스/썸네일) + 운영/손익까지 정밀하게 분류합니다.",
+      "questionIds": [
+        "q7_budget_band",
+        "q8_channels",
+        "q40_current_marketing",
+        "q41_has_ad_experience",
+        "q42_current_ad_budget",
+        "q43_ad_performance_feel",
+        "q44_measurement_methods",
+        "q45_kpi_to_increase",
+
+        "q13_execution_time_weekly",
+        "q14_photo_capability",
+        "q15_goal_30d",
+        "q16_pain_points",
+
+        "q17_table_count",
+        "q18_turnover_peak",
+        "q19_peak_hours",
+        "q20_queue_level",
+
+        "q21_signature_menus",
+        "q22_signature_scene_desc",
+        "q23_strengths",
+        "q24_is_franchise",
+        "q25_franchise_diff",
+        "q26_event_possible",
+        "q12_has_impulse_scene",
+
+        "q9_place_thumbnail_ctr_self",
+        "q27_place_menu_update_freq",
+        "q28_place_first_paragraph_value",
+        "q29_place_convenience_accuracy",
+
+        "q10_reviews_visit_range",
+        "q11_reviews_blog_range",
+        "q31_review_photo_ratio",
+        "q32_review_request_loop",
+        "q33_negative_review_issues",
+
+        "q35_keyword_menu_terms",
+        "q36_keyword_area_aliases",
+        "q37_keyword_radius",
+        "q38_keyword_intents",
+        "q39_competitors"
+      ]
+    }
+  },
+  "questions": [
+    {
+      "id": "q1_operation_mode",
+      "stage": "pre",
+      "key": "operation_mode",
+      "type": "single_select",
+      "title": "운영 형태를 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "hall", "label": "홀 위주" },
+        { "value": "delivery", "label": "배달 위주" },
+        { "value": "mixed", "label": "혼합" }
+      ]
+    },
+    {
+      "id": "q2_open_age",
+      "stage": "pre",
+      "key": "open_age",
+      "type": "single_select",
+      "title": "오픈 시점을 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "lt_90", "label": "90일 이내" },
+        { "value": "m3_12", "label": "3~12개월" },
+        { "value": "gt_12", "label": "1년 이상" }
+      ]
+    },
+    {
+      "id": "q3_avg_ticket",
+      "stage": "pre",
+      "key": "avg_ticket",
+      "type": "currency",
+      "title": "평균 객단가(1팀 기준)를 입력해 주세요",
+      "required": true,
+      "min": 3000,
+      "max": 300000,
+      "placeholder": "예: 15000"
+    },
+    {
+      "id": "q4_fixed_cost",
+      "stage": "pre",
+      "key": "fixed_cost",
+      "type": "currency",
+      "title": "월 고정비(월세+인건비+관리비+기타)를 입력해 주세요",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "placeholder": "예: 6000000"
+    },
+    {
+      "id": "q5_variable_rate",
+      "stage": "pre",
+      "key": "variable_rate",
+      "type": "percent",
+      "title": "변동비율(원가+수수료)을 %로 입력해 주세요",
+      "required": true,
+      "min": 0,
+      "max": 90,
+      "placeholder": "예: 35"
+    },
+    {
+      "id": "q6_current_metric",
+      "stage": "pre",
+      "key": "current_metric",
+      "type": "group",
+      "title": "현재 월 성과를 입력해 주세요",
+      "required": true,
+      "fields": [
+        {
+          "key": "mode",
+          "type": "single_select",
+          "title": "기준",
+          "required": true,
+          "options": [
+            { "value": "sales", "label": "월 매출(원)" },
+            { "value": "teams", "label": "월 방문팀(팀)" }
+          ]
+        },
+        {
+          "key": "value",
+          "type": "number",
+          "title": "값",
+          "required": true,
+          "min": 0,
+          "max": 1000000000,
+          "placeholder": "예: 30000000"
+        }
+      ]
+    },
+    {
+      "id": "q7_budget_band",
+      "stage": "post",
+      "key": "budget_band",
+      "type": "single_select",
+      "title": "최근 30일 마케팅/광고 예산(대략)을 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "0", "label": "0원" },
+        { "value": "1_30", "label": "1~30만원" },
+        { "value": "30_100", "label": "30~100만원" },
+        { "value": "100_200", "label": "100~200만원" },
+        { "value": "200_plus", "label": "200만원 이상" }
+      ]
+    },
+    {
+      "id": "q8_channels",
+      "stage": "post",
+      "key": "channels",
+      "type": "multi_select",
+      "title": "현재 ‘신규 유입’이 실제로 발생하는 채널을 모두 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "naver_place", "label": "네이버지도/플레이스 검색" },
+        { "value": "naver_search", "label": "네이버 검색(블로그/카페/키워드)" },
+        { "value": "delivery_app", "label": "배달앱" },
+        { "value": "instagram", "label": "인스타·SNS" },
+        { "value": "threads", "label": "스레드" },
+        { "value": "carrot", "label": "당근" },
+        { "value": "offline_repeat", "label": "지인/단골/입소문" },
+        { "value": "etc", "label": "기타" }
+      ]
+    },
+    {
+      "id": "q40_current_marketing",
+      "stage": "post",
+      "key": "current_marketing",
+      "type": "multi_select",
+      "title": "현재 하고 있는 마케팅/상품(운영 현황)을 모두 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "none", "label": "없음" },
+        { "value": "place_ad", "label": "네이버 플레이스 광고" },
+        { "value": "powerlink", "label": "네이버 파워링크" },
+        { "value": "carrot_ad", "label": "당근 광고" },
+        { "value": "receipt_review", "label": "영수증 리뷰" },
+        { "value": "blog_experience", "label": "블로그 체험단" },
+        { "value": "naver_seo", "label": "네이버 상위노출(카페/블로그)" },
+        { "value": "ugc_seeding", "label": "인스타/블로그 시딩" },
+        { "value": "etc", "label": "기타" }
+      ],
+      "helperText": "‘없음’을 선택하면 나머지는 선택하지 않아도 됩니다."
+    },
+    {
+      "id": "q41_has_ad_experience",
+      "stage": "post",
+      "key": "has_ad_experience",
+      "type": "single_select",
+      "title": "광고 집행 경험이 있나요?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "있다" },
+        { "value": "no", "label": "없다" }
+      ]
+    },
+    {
+      "id": "q42_current_ad_budget",
+      "stage": "post",
+      "key": "current_ad_budget",
+      "type": "currency",
+      "title": "현재 광고 예산(월, 대략)을 입력해 주세요",
+      "required": true,
+      "min": 0,
+      "max": 100000000,
+      "placeholder": "예: 500000",
+      "showWhen": { "all": [{ "key": "has_ad_experience", "eq": "yes" }] }
+    },
+    {
+      "id": "q43_ad_performance_feel",
+      "stage": "post",
+      "key": "ad_performance_feel",
+      "type": "single_select",
+      "title": "광고 성과 체감은 어떤가요?",
+      "required": true,
+      "options": [
+        { "value": "good", "label": "좋음" },
+        { "value": "mid", "label": "보통" },
+        { "value": "bad", "label": "나쁨" },
+        { "value": "unknown", "label": "모름" }
+      ],
+      "showWhen": { "all": [{ "key": "has_ad_experience", "eq": "yes" }] }
+    },
+    {
+      "id": "q44_measurement_methods",
+      "stage": "post",
+      "key": "measurement_methods",
+      "type": "multi_select",
+      "title": "성과 확인 방식(측정)을 모두 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "none", "label": "거의 안 함" },
+        { "value": "place_insight", "label": "플레이스 인사이트(노출/클릭/길찾기)" },
+        { "value": "calls", "label": "전화/문의" },
+        { "value": "navigation", "label": "길찾기" },
+        { "value": "reservation", "label": "예약" },
+        { "value": "pos_sales", "label": "포스/매출" },
+        { "value": "delivery_orders", "label": "배달앱 주문" },
+        { "value": "etc", "label": "기타" }
+      ]
+    },
+    {
+      "id": "q45_kpi_to_increase",
+      "stage": "post",
+      "key": "kpi_to_increase",
+      "type": "single_select",
+      "title": "가장 빨리 늘리고 싶은 KPI는 무엇인가요?",
+      "required": true,
+      "options": [
+        { "value": "exposure", "label": "노출/조회" },
+        { "value": "click", "label": "클릭(상세보기)" },
+        { "value": "calls", "label": "전화" },
+        { "value": "navigation", "label": "길찾기" },
+        { "value": "reservation", "label": "예약" },
+        { "value": "visit", "label": "방문/팀수" },
+        { "value": "repeat", "label": "재방문" }
+      ]
+    },
+
+    {
+      "id": "q13_execution_time_weekly",
+      "stage": "post",
+      "key": "execution_time_weekly",
+      "type": "single_select",
+      "title": "마케팅 실행에 쓸 수 있는 시간(주당)을 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "0_1", "label": "0~1시간" },
+        { "value": "1_3", "label": "1~3시간" },
+        { "value": "3_5", "label": "3~5시간" },
+        { "value": "5_plus", "label": "5시간 이상" }
+      ]
+    },
+    {
+      "id": "q14_photo_capability",
+      "stage": "post",
+      "key": "photo_capability",
+      "type": "single_select",
+      "title": "사진 촬영/소재 제작은 가능한가요?",
+      "required": true,
+      "options": [
+        { "value": "owner", "label": "사장님이 직접 가능" },
+        { "value": "staff", "label": "직원 도움 가능" },
+        { "value": "hard", "label": "거의 불가능" }
+      ]
+    },
+    {
+      "id": "q15_goal_30d",
+      "stage": "post",
+      "key": "goal_30d",
+      "type": "single_select",
+      "title": "이번 달(30일) 가장 중요한 목표를 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "sales_fast", "label": "매출 빠르게 올리기" },
+        { "value": "place_rank", "label": "플레이스/검색 노출 올리기" },
+        { "value": "delivery_stable", "label": "배달 매출 안정화" },
+        { "value": "repeat_brand", "label": "단골/재방문 강화" }
+      ]
+    },
+    {
+      "id": "q16_pain_points",
+      "stage": "post",
+      "key": "pain_points",
+      "type": "multi_select",
+      "title": "지금 가장 답답한 문제를 선택해 주세요(최대 2개)",
+      "required": true,
+      "maxSelections": 2,
+      "options": [
+        { "value": "no_exposure", "label": "노출이 안 됨(검색/지도)" },
+        { "value": "low_click", "label": "노출은 되는데 클릭이 안 됨(썸네일)" },
+        { "value": "low_visit", "label": "클릭은 되는데 방문/예약이 안 됨" },
+        { "value": "low_reviews", "label": "리뷰가 약함/안 쌓임" },
+        { "value": "low_repeat", "label": "재방문이 낮음" },
+        { "value": "unit_econ", "label": "남는 게 없음(원가/마진)" },
+        { "value": "no_content", "label": "콘텐츠 만들 시간이 없음" }
+      ]
+    },
+
+    {
+      "id": "q17_table_count",
+      "stage": "post",
+      "key": "table_count",
+      "type": "number",
+      "title": "테이블/좌석 수를 입력해 주세요",
+      "required": true,
+      "min": 0,
+      "max": 1000,
+      "placeholder": "예: 12"
+    },
+    {
+      "id": "q18_turnover_peak",
+      "stage": "post",
+      "key": "turnover_peak",
+      "type": "single_select",
+      "title": "피크타임 회전(테이블당)을 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "1", "label": "1회" },
+        { "value": "1_5", "label": "1.5회" },
+        { "value": "2_plus", "label": "2회 이상" },
+        { "value": "unknown", "label": "모름" }
+      ]
+    },
+    {
+      "id": "q19_peak_hours",
+      "stage": "post",
+      "key": "peak_hours",
+      "type": "text",
+      "title": "피크 시간대를 입력해 주세요",
+      "required": true,
+      "placeholder": "예: 평일 19~21 / 주말 18~22"
+    },
+    {
+      "id": "q20_queue_level",
+      "stage": "post",
+      "key": "queue_level",
+      "type": "single_select",
+      "title": "피크 때 자리/대기 상태는 어떤가요?",
+      "required": true,
+      "options": [
+        { "value": "empty", "label": "자리가 남는다(한산)" },
+        { "value": "sometimes", "label": "가끔 웨이팅" },
+        { "value": "often", "label": "자주 웨이팅/한계" },
+        { "value": "unknown", "label": "모름" }
+      ]
+    },
+
+    {
+      "id": "q21_signature_menus",
+      "stage": "post",
+      "key": "signature_menus",
+      "type": "multi_text",
+      "title": "시그니처/주력 메뉴 1~3개 이름",
+      "required": true,
+      "minItems": 1,
+      "maxItems": 3,
+      "placeholder": "예: 마왕족발, 불족발"
+    },
+    {
+      "id": "q22_signature_scene_desc",
+      "stage": "post",
+      "key": "signature_scene_desc",
+      "type": "textarea",
+      "title": "‘가고 싶은 장면’이 있다면 한 문장으로 설명해 주세요(선택)",
+      "required": false,
+      "placeholder": "예: 불쇼 퍼포먼스 + 압도적 양 + 세트 구성"
+    },
+    {
+      "id": "q23_strengths",
+      "stage": "post",
+      "key": "strengths",
+      "type": "multi_select",
+      "title": "경쟁 대비 강점(최대 3개)",
+      "required": true,
+      "maxSelections": 3,
+      "options": [
+        { "value": "taste", "label": "맛" },
+        { "value": "price", "label": "가격" },
+        { "value": "portion", "label": "양/가성비" },
+        { "value": "service", "label": "서비스" },
+        { "value": "mood", "label": "분위기" },
+        { "value": "parking", "label": "주차" },
+        { "value": "room", "label": "룸/단체" },
+        { "value": "speed", "label": "빠름/회전" },
+        { "value": "etc", "label": "기타" }
+      ]
+    },
+    {
+      "id": "q24_is_franchise",
+      "stage": "post",
+      "key": "is_franchise",
+      "type": "single_select",
+      "title": "프랜차이즈인가요?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "프차" },
+        { "value": "no", "label": "비프차" }
+      ]
+    },
+    {
+      "id": "q25_franchise_diff",
+      "stage": "post",
+      "key": "franchise_diff",
+      "type": "multi_select",
+      "title": "프차라면 차별이 가능한 영역을 선택해 주세요",
+      "required": true,
+      "options": [
+        { "value": "service", "label": "서비스/응대" },
+        { "value": "set", "label": "세트/구성" },
+        { "value": "side", "label": "사이드/업셀" },
+        { "value": "event", "label": "이벤트/혜택" },
+        { "value": "none", "label": "거의 없음" }
+      ],
+      "showWhen": { "all": [{ "key": "is_franchise", "eq": "yes" }] }
+    },
+    {
+      "id": "q26_event_possible",
+      "stage": "post",
+      "key": "event_possible",
+      "type": "single_select",
+      "title": "할인/이벤트 운영은 가능한가요?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "가능" },
+        { "value": "limited", "label": "제한적" },
+        { "value": "no", "label": "불가" }
+      ]
+    },
+    {
+      "id": "q9_place_thumbnail_ctr_self",
+      "stage": "post",
+      "key": "place_thumbnail_ctr_self",
+      "type": "rating_1_5",
+      "title": "플레이스 대표사진이 클릭을 부른다(체감)",
+      "required": true
+    },
+    {
+      "id": "q27_place_menu_update_freq",
+      "stage": "post",
+      "key": "place_menu_update_freq",
+      "type": "single_select",
+      "title": "플레이스 메뉴/가격 정보 업데이트 주기",
+      "required": true,
+      "options": [
+        { "value": "weekly", "label": "주 1회 이상" },
+        { "value": "monthly", "label": "월 1회" },
+        { "value": "rare", "label": "거의 안 함" },
+        { "value": "unknown", "label": "모름" }
+      ]
+    },
+    {
+      "id": "q28_place_first_paragraph_value",
+      "stage": "post",
+      "key": "place_first_paragraph_value",
+      "type": "single_select",
+      "title": "플레이스 소개문 첫 2줄이 ‘왜 와야 하는지’를 말하나요?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "예" },
+        { "value": "no", "label": "아니오" },
+        { "value": "unknown", "label": "모름" }
+      ]
+    },
+    {
+      "id": "q29_place_convenience_accuracy",
+      "stage": "post",
+      "key": "place_convenience_accuracy",
+      "type": "single_select",
+      "title": "주차/룸/단체/예약/포장/배달 등 편의정보가 정확한가요?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "예" },
+        { "value": "no", "label": "아니오" },
+        { "value": "unknown", "label": "모름" }
+      ]
+    },
+    {
+      "id": "q10_reviews_visit_range",
+      "stage": "post",
+      "key": "reviews_visit_range",
+      "type": "single_select",
+      "title": "방문자리뷰 수 구간",
+      "required": true,
+      "options": [
+        { "value": "0_30", "label": "0~30" },
+        { "value": "31_100", "label": "31~100" },
+        { "value": "100_plus", "label": "100+" }
+      ]
+    },
+    {
+      "id": "q11_reviews_blog_range",
+      "stage": "post",
+      "key": "reviews_blog_range",
+      "type": "single_select",
+      "title": "블로그리뷰 수 구간",
+      "required": true,
+      "options": [
+        { "value": "0_10", "label": "0~10" },
+        { "value": "11_30", "label": "11~30" },
+        { "value": "30_plus", "label": "30+" }
+      ]
+    },
+    {
+      "id": "q31_review_photo_ratio",
+      "stage": "post",
+      "key": "review_photo_ratio",
+      "type": "single_select",
+      "title": "포토리뷰 비중(체감)",
+      "required": true,
+      "options": [
+        { "value": "low", "label": "낮음" },
+        { "value": "mid", "label": "보통" },
+        { "value": "high", "label": "높음" },
+        { "value": "unknown", "label": "모름" }
+      ]
+    },
+    {
+      "id": "q32_review_request_loop",
+      "stage": "post",
+      "key": "review_request_loop",
+      "type": "single_select",
+      "title": "리뷰를 요청하는 ‘고정 동선’이 있나요?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "있다" },
+        { "value": "no", "label": "없다" }
+      ]
+    },
+    {
+      "id": "q33_negative_review_issues",
+      "stage": "post",
+      "key": "negative_review_issues",
+      "type": "multi_select",
+      "title": "최근 30일 부정 리뷰 이슈(해당되는 것 모두)",
+      "required": true,
+      "options": [
+        { "value": "위생", "label": "위생" },
+        { "value": "서비스", "label": "서비스" },
+        { "value": "가격", "label": "가격" },
+        { "value": "맛", "label": "맛" },
+        { "value": "대기", "label": "대기/웨이팅" },
+        { "value": "주차", "label": "주차" },
+        { "value": "없음", "label": "없음" }
+      ]
+    },
+    {
+      "id": "q12_has_impulse_scene",
+      "stage": "post",
+      "key": "has_impulse_scene",
+      "type": "single_select",
+      "title": "사진 한 장만 봐도 ‘가고 싶은 장면(메뉴/공간/퍼포먼스)’이 있다",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "있다" },
+        { "value": "no", "label": "없다/모르겠다" }
+      ]
+    },
+
+    {
+      "id": "q35_keyword_menu_terms",
+      "stage": "post",
+      "key": "keyword_menu_terms",
+      "type": "multi_text",
+      "title": "키워드 Seed(메뉴/업종) 1~3개",
+      "required": true,
+      "minItems": 1,
+      "maxItems": 3,
+      "placeholder": "예: 라멘, 삼겹살"
+    },
+    {
+      "id": "q36_keyword_area_aliases",
+      "stage": "post",
+      "key": "keyword_area_aliases",
+      "type": "multi_text",
+      "title": "상권 별칭(역/거리/핫플 등, 선택)",
+      "required": false,
+      "minItems": 0,
+      "maxItems": 5,
+      "placeholder": "예: 신사역, 가로수길"
+    },
+    {
+      "id": "q37_keyword_radius",
+      "stage": "post",
+      "key": "keyword_radius",
+      "type": "single_select",
+      "title": "주 고객 이동 반경",
+      "required": true,
+      "options": [
+        { "value": "walk_5", "label": "도보 5분" },
+        { "value": "walk_10", "label": "도보 10분" },
+        { "value": "drive_10", "label": "차량 10분(약 3~5km)" },
+        { "value": "wide", "label": "광역(목적 방문)" }
+      ]
+    },
+    {
+      "id": "q38_keyword_intents",
+      "stage": "post",
+      "key": "keyword_intents",
+      "type": "multi_select",
+      "title": "의도 키워드(선택)",
+      "required": false,
+      "options": [
+        { "value": "데이트", "label": "데이트" },
+        { "value": "혼밥", "label": "혼밥" },
+        { "value": "회식", "label": "회식" },
+        { "value": "모임", "label": "모임" },
+        { "value": "단체", "label": "단체" },
+        { "value": "가족", "label": "가족" },
+        { "value": "야식", "label": "야식" }
+      ]
+    },
+    {
+      "id": "q39_competitors",
+      "stage": "post",
+      "key": "competitors",
+      "type": "multi_text",
+      "title": "경쟁 매장 1~3곳(상호 또는 플레이스 링크, 선택)",
+      "required": false,
+      "minItems": 0,
+      "maxItems": 3,
+      "placeholder": "예: OO식당"
+    }
+  ]
+}

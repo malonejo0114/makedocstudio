@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "mkdoc.ruleTable.v1",
+  "axes": [
+    { "id": "demand", "label": "Demand" },
+    { "id": "cost", "label": "Cost" },
+    { "id": "placeCvr", "label": "PlaceCVR" },
+    { "id": "hook", "label": "Hook" },
+    { "id": "unitEconomics", "label": "UnitEconomics" }
+  ],
+  "types": [
+    {
+      "code": "T04",
+      "name": "손익 구조 위험형",
+      "oneLiner": "마케팅보다 먼저 ‘남는 구조’를 잡아야 합니다.",
+      "priority": 100,
+      "whenAny": [
+        { "metric": "gap_ratio", "gte": 1.4 },
+        { "answer": "variable_rate", "gte": 45 }
+      ]
+    },
+    {
+      "code": "T10",
+      "name": "신규 오픈/런치형",
+      "oneLiner": "오픈 90일은 지표를 쌓는 속도가 승부입니다.",
+      "priority": 92,
+      "whenAll": [{ "answer": "open_age", "eq": "lt_90" }]
+    },
+    {
+      "code": "T08",
+      "name": "배달 동선 분리형",
+      "oneLiner": "배달/방문 동선을 분리 설계해야 효율이 납니다.",
+      "priority": 88,
+      "whenAny": [{ "answer": "operation_mode", "in": ["delivery"] }]
+    },
+    {
+      "code": "T02",
+      "name": "플레이스 전환 누수형(썸네일 병목)",
+      "oneLiner": "노출이 있어도 ‘첫 화면’에서 클릭과 방문이 샙니다.",
+      "priority": 85,
+      "whenAny": [
+        { "axis": "placeCvr", "lte": 40 },
+        { "answer": "place_thumbnail_ctr_self", "lte": 2 }
+      ]
+    },
+    {
+      "code": "T06",
+      "name": "리뷰/신뢰 부족형",
+      "oneLiner": "사회적 증거가 약하면 선택에서 밀립니다.",
+      "priority": 80,
+      "whenAny": [
+        { "answer": "reviews_visit_range", "eq": "0_30" },
+        { "answer": "reviews_blog_range", "eq": "0_10" }
+      ]
+    },
+    {
+      "code": "T15",
+      "name": "광고비 과열형",
+      "oneLiner": "검색 수요는 있는데 ‘입찰비/경쟁’이 과열입니다.",
+      "priority": 75,
+      "whenAll": [{ "axis": "demand", "gte": 55 }, { "axis": "cost", "lte": 40 }]
+    },
+    {
+      "code": "T16",
+      "name": "수요 부족형(수요 창출 먼저)",
+      "oneLiner": "검색 수요가 부족하면 ‘충동/콘텐츠’가 먼저입니다.",
+      "priority": 70,
+      "whenAny": [{ "axis": "demand", "lte": 40 }]
+    },
+    {
+      "code": "T03",
+      "name": "후킹 약함(상품/콘셉트) 선행형",
+      "oneLiner": "광고 전에 ‘가고 싶은 장면’을 먼저 만들어야 합니다.",
+      "priority": 66,
+      "whenAny": [{ "axis": "hook", "lte": 40 }, { "answer": "has_impulse_scene", "eq": "no" }]
+    },
+    {
+      "code": "T07",
+      "name": "채널 편식형",
+      "oneLiner": "한 채널 의존은 변동성이 큽니다.",
+      "priority": 55,
+      "whenAll": [{ "answerArrayLen": "channels", "lte": 1 }]
+    },
+    {
+      "code": "T01",
+      "name": "노출 확장형(도달 부족)",
+      "oneLiner": "후킹이 있다면, 이제 ‘보는 사람 수’를 늘릴 차례입니다.",
+      "priority": 50,
+      "whenAll": [{ "axis": "hook", "gte": 55 }, { "axis": "demand", "gte": 45 }]
+    },
+    {
+      "code": "T05",
+      "name": "검색 세팅 빈약형(SEO/키워드)",
+      "oneLiner": "검색형 업종은 키워드/설명 세팅이 승부입니다.",
+      "priority": 45,
+      "whenAny": [{ "axis": "demand", "gte": 50 }, { "axis": "cost", "gte": 50 }]
+    },
+
+    { "code": "T09", "name": "경쟁 과열형", "oneLiner": "‘맛집’ 대신 상황 키워드로 포지셔닝합니다.", "priority": 42 },
+    { "code": "T11", "name": "정보 정확도 부족형", "oneLiner": "기본 정보/메뉴/가격 누락은 즉시 손봐야 합니다.", "priority": 40 },
+    { "code": "T12", "name": "최신성 부족형", "oneLiner": "공지/사진/이벤트 업데이트 주기를 잡아야 합니다.", "priority": 38 },
+    { "code": "T13", "name": "인기도 부족형", "oneLiner": "저장/공유/외부유입 루프를 설계해야 합니다.", "priority": 36 },
+    { "code": "T14", "name": "콘텐츠 생산 정체형", "oneLiner": "콘텐츠가 끊기면 노출도 같이 끊깁니다.", "priority": 34 },
+    { "code": "T17", "name": "재방문 누수형", "oneLiner": "신규만 사 오는 구조면 광고비가 계속 올라갑니다.", "priority": 32 },
+    { "code": "T18", "name": "객단가 낮음", "oneLiner": "세트/추가 옵션으로 객단가를 올려야 합니다.", "priority": 30 },
+    { "code": "T19", "name": "고정비 과다", "oneLiner": "고정비가 높으면 BEP를 넘기기 더 어렵습니다.", "priority": 28 },
+    { "code": "T20", "name": "배달앱 의존", "oneLiner": "플레이스는 브랜드 신뢰를 최소 세팅으로 유지합니다.", "priority": 26 }
+  ],
+  "subTags": [
+    { "code": "BEP_RISK", "label": "BEP 위험", "whenAny": [{ "metric": "gap_ratio", "gte": 1.3 }] },
+    { "code": "PLACE_CVR", "label": "썸네일/전환", "whenAny": [{ "axis": "placeCvr", "lte": 45 }] },
+    { "code": "REVIEW_TRUST", "label": "리뷰/신뢰", "whenAny": [{ "answer": "reviews_visit_range", "eq": "0_30" }] },
+    { "code": "COST_HIGH", "label": "광고비 과열", "whenAny": [{ "axis": "cost", "lte": 40 }] },
+    { "code": "DEMAND_LOW", "label": "수요 부족", "whenAny": [{ "axis": "demand", "lte": 40 }] },
+    { "code": "HOOK_WEAK", "label": "후킹 약함", "whenAny": [{ "axis": "hook", "lte": 40 }] },
+    { "code": "NEW_OPEN", "label": "신규 오픈", "whenAny": [{ "answer": "open_age", "eq": "lt_90" }] },
+    { "code": "DELIVERY", "label": "배달 중심", "whenAny": [{ "answer": "operation_mode", "eq": "delivery" }] }
+  ],
+  "products": {
+    "FULL_REPORT_39900": { "name": "마케팅 진단 풀 리포트(처방전)", "price": 39900, "active": true },
+    "NAVER_PLACE_AD": { "name": "네이버 플레이스 광고", "management_fee": 149000, "cpc_note": "CPC 별도", "active": true },
+    "NAVER_POWERLINK_AD": { "name": "네이버 파워링크 광고", "management_fee": 149000, "cpc_note": "CPC 별도", "active": true },
+    "CARROT_AD": { "name": "당근 광고", "management_fee": 149000, "cpc_note": "CPC 별도", "active": true },
+    "RECEIPT_REVIEW": { "name": "네이버 영수증 리뷰(커스텀)", "price": null, "active": true },
+    "BLOG_EXPERIENCE": { "name": "블로그 체험단(올인원)", "price": null, "active": true }
+  },
+  "recommendationsByType": {
+    "T04": { "primary": ["NAVER_POWERLINK_AD", "NAVER_PLACE_AD"], "optional": ["CARROT_AD"] },
+    "T02": { "primary": ["NAVER_PLACE_AD", "RECEIPT_REVIEW"], "optional": ["BLOG_EXPERIENCE"] },
+    "T06": { "primary": ["RECEIPT_REVIEW", "BLOG_EXPERIENCE"], "optional": ["NAVER_PLACE_AD"] },
+    "T15": { "primary": ["BLOG_EXPERIENCE", "NAVER_PLACE_AD"], "optional": ["NAVER_POWERLINK_AD"] },
+    "T16": { "primary": ["CARROT_AD", "BLOG_EXPERIENCE"], "optional": ["NAVER_PLACE_AD"] },
+    "default": { "primary": ["NAVER_PLACE_AD", "CARROT_AD"], "optional": ["RECEIPT_REVIEW", "BLOG_EXPERIENCE"] }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "mkdoc.reportTemplate.v1",
+  "placeholders": [
+    "{{storeName}}",
+    "{{area}}",
+    "{{totalScore}}",
+    "{{mainTypeName}}",
+    "{{bepDailyTeams}}",
+    "{{gapDailyTeams}}"
+  ],
+  "sections": {
+    "hero": {
+      "title": "{{storeName}} 마케팅 진단 리포트",
+      "subtitle": "근거(수치) → 병목 → 30일 처방전"
+    },
+    "summary": {
+      "title": "1분 요약",
+      "items": [
+        "총점: {{totalScore}}/100",
+        "메인 타입: {{mainTypeName}}",
+        "이번 달 우선순위 3가지: (리포트 생성 시 채움)"
+      ]
+    },
+    "equation": {
+      "title": "매출 방정식",
+      "formula": "유입 × 전환 × 재방문 × 객단가",
+      "notes": ["어느 항이 병목인지 먼저 고치면 비용이 줄어듭니다."]
+    },
+    "bep": {
+      "title": "BEP/최대 CPA",
+      "items": [
+        "추정 BEP(일): {{bepDailyTeams}}팀",
+        "현재 대비 갭(일): {{gapDailyTeams}}팀"
+      ]
+    },
+    "keywordNet": {
+      "title": "키워드 그물망",
+      "notes": [
+        "SearchAd 기반으로 수요/CTR/입찰가를 정량화합니다.",
+        "결제 후 전체 클러스터/우선순위가 공개됩니다."
+      ]
+    },
+    "placeRx": {
+      "title": "플레이스 처방전(체크리스트)",
+      "items": [
+        "정확도(정보/업종/메뉴/가격) 체크",
+        "신뢰도(리뷰/응답/일관성) 체크",
+        "최신성(공지/사진/메뉴 업데이트) 체크",
+        "인기도(저장/외부 유입/행동) 체크"
+      ]
+    },
+    "photoRx": {
+      "title": "썸네일/사진 처방",
+      "notes": [
+        "업로드된 사진 기반 코멘트 영역(운영용)",
+        "대표사진 구성 템플릿 + 문구 템플릿을 제공합니다."
+      ]
+    },
+    "recommendations": {
+      "title": "추천 실행 상품",
+      "primary": ["우선 추천 1~2개만 크게 노출"],
+      "optional": ["추가 옵션은 접기 UI로 노출"]
+    },
+    "consultCta": {
+      "title": "30분 무료상담",
+      "body": "리포트를 기반으로 1순위 액션을 같이 결정합니다.",
+      "calendarLink": "https://example.com/placeholder"
+    }
+  }
+}
+

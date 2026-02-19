@@ -1,0 +1,10 @@
+.next
+.next-dev
+.next-build
+.next_bak_*
+.next_pre_fix_*
+node_modules
+.env.local
+npm-debug.log*
+tsconfig.tsbuildinfo
+.DS_Store

@@ -1,0 +1,39 @@
+{
+  "name": "adgenius-pro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "NEXT_DIST_DIR=.next-dev next dev -H localhost -p 3000",
+    "dev:clean": "rm -rf .next-dev && NEXT_DIST_DIR=.next-dev next dev -H localhost -p 3000",
+    "dev:reset": "npm run clean:caches && npm run dev",
+    "build": "NEXT_DIST_DIR=.next-build next build",
+    "start": "NEXT_DIST_DIR=.next-build next start -H localhost -p 3000",
+    "clean:caches": "rm -rf .next .next-dev .next-build tsconfig.tsbuildinfo",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "fabric": "^7.1.0",
+    "framer-motion": "^11.18.2",
+    "konva": "^9.3.22",
+    "next": "14.2.32",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "server-only": "^0.0.1",
+    "sharp": "^0.34.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
+  }
+}

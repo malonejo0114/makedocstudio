@@ -1,0 +1,90 @@
+[
+  {
+    "id": "ex_beauty_01",
+    "title": "LUMIDROP 비타 글로우 세럼 런칭",
+    "category": "beauty",
+    "brandName": "LUMIDROP",
+    "productName": "비타 글로우 세럼",
+    "tags": ["뷰티", "프리미엄", "광채 톤", "4:5"],
+    "imageUrl": "/studio-examples/solcareskin-serum.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_beauty_02",
+    "title": "DERMIA 장벽 수분크림 상담형 배너",
+    "category": "beauty",
+    "brandName": "DERMIA",
+    "productName": "장벽 수분크림",
+    "tags": ["뷰티", "신뢰", "클리닉 무드", "9:16"],
+    "imageUrl": "/studio-examples/dermia-barrier-cream.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_fashion_01",
+    "title": "AEROFIT 액티브웨어 런칭",
+    "category": "fashion",
+    "brandName": "AEROFIT",
+    "productName": "에어로 액티브웨어",
+    "tags": ["패션", "스포티", "퍼포먼스", "1:1"],
+    "imageUrl": "/studio-examples/aerofit-active.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_fashion_02",
+    "title": "NIGHTGRID 스피커 하이엔드 드랍",
+    "category": "fashion",
+    "brandName": "NIGHTGRID",
+    "productName": "프리미엄 스피커",
+    "tags": ["하이엔드", "강한 대비", "드랍", "4:5"],
+    "imageUrl": "/studio-examples/nightgrid-speaker.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_food_01",
+    "title": "URBAN BREW 콜드브루 시즌 오퍼",
+    "category": "food",
+    "brandName": "URBAN BREW",
+    "productName": "시그니처 콜드브루",
+    "tags": ["식품", "카페", "오퍼형", "4:5"],
+    "imageUrl": "/studio-examples/urbanbrew-coldbrew.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_food_02",
+    "title": "LOWBITE 저당 견과바 묶음할인",
+    "category": "food",
+    "brandName": "LOWBITE",
+    "productName": "저당 견과바",
+    "tags": ["식품", "가격강조", "혜택형", "1:1"],
+    "imageUrl": "/studio-examples/lowbite-snackbar.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_clinic_01",
+    "title": "바른피부클리닉 맞춤 상담 예약",
+    "category": "clinic",
+    "brandName": "바른피부클리닉",
+    "productName": "맞춤 상담",
+    "tags": ["병원", "로컬", "예약", "9:16"],
+    "imageUrl": "/studio-examples/bareun-clinic-consulting.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  },
+  {
+    "id": "ex_local_01",
+    "title": "LUMIFIZZ 스파클링 한정 오퍼",
+    "category": "local",
+    "brandName": "LUMIFIZZ",
+    "productName": "제로 슈가 스파클링",
+    "tags": ["음료", "네온 무드", "혜택형", "4:5"],
+    "imageUrl": "/studio-examples/lumifizz-premium.png",
+    "isFeatured": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  }
+]
