@@ -441,6 +441,7 @@ export default function StudioWorkbench() {
       .map((templateId) => templates.find((item) => item.id === templateId))
       .filter((item): item is TemplateItem => Boolean(item));
   }, [recommendedTemplateIds, templates]);
+  const ANALYZE_CREDITS_REQUIRED = 1;
   const selectedModelCreditsRequired = selectedModel?.price.creditsRequired ?? 2;
   const allRequiredCredits = prompts.length * selectedModelCreditsRequired;
   const analysisEstimatedWindow = useMemo(() => {
@@ -943,7 +944,7 @@ export default function StudioWorkbench() {
               }
               className="mt-auto rounded-full border border-black/10 bg-[#D6FF4F] px-4 py-2 text-sm font-semibold text-[#0B0B0C] transition hover:-translate-y-0.5 disabled:opacity-60"
             >
-              {generatingAll ? "모두 생성 중..." : "모두 생성하기"}
+              {generatingAll ? "모두 생성 중..." : `모두 생성하기 (${allRequiredCredits}cr)`}
             </button>
           </div>
         </div>
@@ -1319,9 +1320,13 @@ export default function StudioWorkbench() {
                 : analyzing
                   ? "분석 중..."
                 : referenceImageUrl
-                  ? "레퍼런스 분석하기"
-                  : "컨셉 생성하기"}
+                  ? `레퍼런스 분석하기 (${ANALYZE_CREDITS_REQUIRED}cr)`
+                  : `컨셉 생성하기 (${ANALYZE_CREDITS_REQUIRED}cr)`}
           </button>
+          <p className="mt-2 text-[11px] text-black/55">
+            기본 분석 버튼은 클릭할 때마다 1크레딧 차감됩니다. 보완 입력 후{" "}
+            <span className="font-semibold text-black/70">다시 분석하기</span>는 무료입니다.
+          </p>
 
           {analysis && (
             <div className="mt-4 space-y-3 rounded-2xl border border-black/10 bg-black/[0.02] p-3 text-sm">
@@ -1387,7 +1392,7 @@ export default function StudioWorkbench() {
                           disabled={analyzing || Boolean(uploadingAsset)}
                           className="rounded-full border border-rose-300 bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
                         >
-                          다시 분석하기
+                          다시 분석하기 (무료)
                         </button>
                         <button
                           type="button"
@@ -2026,7 +2031,9 @@ export default function StudioWorkbench() {
                 }
                 className="w-full rounded-full bg-[#0B0B0C] px-4 py-2.5 text-sm font-semibold text-[#D6FF4F] transition hover:-translate-y-0.5 disabled:opacity-60"
               >
-                {generatingPromptId === selectedPrompt.id ? "생성 중..." : "이 프롬프트만 생성"}
+                {generatingPromptId === selectedPrompt.id
+                  ? "생성 중..."
+                  : `이 프롬프트만 생성 (${selectedModelCreditsRequired}cr)`}
               </button>
             </div>
           ) : (
