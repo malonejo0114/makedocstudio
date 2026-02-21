@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { optimizeImageForUpload } from "@/lib/studio/imageUpload.client";
+
 type TemplateItem = {
   id: string;
   title: string;
@@ -15,6 +17,41 @@ type TemplateItem = {
 type Payload = {
   items: TemplateItem[];
 };
+
+async function readResponsePayload(response: Response): Promise<unknown> {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.toLowerCase().includes("application/json")) {
+    return response.json().catch(() => null);
+  }
+
+  const rawText = await response.text().catch(() => "");
+  if (!rawText) return null;
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    return { rawText };
+  }
+}
+
+function toErrorMessage(payload: unknown, fallback: string, responseStatus?: number): string {
+  if (typeof payload === "object" && payload) {
+    if ("error" in payload && typeof (payload as { error?: unknown }).error === "string") {
+      return (payload as { error: string }).error;
+    }
+    if ("rawText" in payload && typeof (payload as { rawText?: unknown }).rawText === "string") {
+      const text = (payload as { rawText: string }).rawText;
+      const payloadTooLarge =
+        responseStatus === 413 ||
+        text.includes("FUNCTION_PAYLOAD_TOO_LARGE") ||
+        text.includes("Request Entity Too Large");
+      if (payloadTooLarge) {
+        return "업로드 이미지 용량이 너무 큽니다. 3MB 이하(권장 2000px 이하)로 줄여 다시 시도해 주세요.";
+      }
+      return text.replace(/\s+/g, " ").slice(0, 180) || fallback;
+    }
+  }
+  return fallback;
+}
 
 export default function AdminTemplatesManager() {
   const [items, setItems] = useState<TemplateItem[]>([]);
@@ -30,9 +67,11 @@ export default function AdminTemplatesManager() {
 
   async function load() {
     const response = await fetch("/api/admin/templates");
-    const payload = (await response.json()) as Payload & { error?: string };
-    if (!response.ok) throw new Error(payload.error || "템플릿 목록 조회 실패");
-    setItems(payload.items || []);
+    const payload = (await readResponsePayload(response)) as (Payload & { error?: string }) | null;
+    if (!response.ok) {
+      throw new Error(toErrorMessage(payload, "템플릿 목록 조회 실패", response.status));
+    }
+    setItems(payload?.items || []);
   }
 
   useEffect(() => {
@@ -62,8 +101,12 @@ export default function AdminTemplatesManager() {
     setMessage(null);
 
     try {
+      const optimizedFile = await optimizeImageForUpload(uploadFile, {
+        maxBytes: 3 * 1024 * 1024,
+        maxEdge: 2048,
+      });
       const formData = new FormData();
-      formData.append("image", uploadFile);
+      formData.append("image", optimizedFile);
       formData.append("title", title);
       formData.append("tags", tags);
       formData.append("isFeatured", String(featured));
@@ -72,8 +115,10 @@ export default function AdminTemplatesManager() {
         method: "POST",
         body: formData,
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "업로드 실패");
+      const payload = await readResponsePayload(response);
+      if (!response.ok) {
+        throw new Error(toErrorMessage(payload, "업로드 실패", response.status));
+      }
 
       setUploadFile(null);
       setTitle("");
@@ -104,8 +149,10 @@ export default function AdminTemplatesManager() {
           isFeatured: updates.isFeatured,
         }),
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "수정 실패");
+      const payload = await readResponsePayload(response);
+      if (!response.ok) {
+        throw new Error(toErrorMessage(payload, "수정 실패", response.status));
+      }
       await load();
       setMessage("템플릿을 수정했습니다.");
     } catch (err) {
@@ -126,8 +173,10 @@ export default function AdminTemplatesManager() {
         },
         body: JSON.stringify({ id }),
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "삭제 실패");
+      const payload = await readResponsePayload(response);
+      if (!response.ok) {
+        throw new Error(toErrorMessage(payload, "삭제 실패", response.status));
+      }
       await load();
       setMessage("템플릿을 삭제했습니다.");
     } catch (err) {
