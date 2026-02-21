@@ -10,6 +10,7 @@ import {
   formatDateTime,
   getAccessToken,
 } from "@/lib/studio/client";
+import { optimizeImageForUpload } from "@/lib/studio/imageUpload.client";
 
 type StudioPrompt = {
   id: string;
@@ -538,8 +539,12 @@ export default function StudioWorkbench() {
   async function uploadStudioAsset(file: File, assetType: UploadAssetType): Promise<string> {
     setUploadingAsset(assetType);
     try {
+      const optimizedFile = await optimizeImageForUpload(file, {
+        maxBytes: 3 * 1024 * 1024,
+        maxEdge: 2048,
+      });
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("assetType", assetType);
 
       const payload = await authFetchJson<{ imageUrl?: string; referenceImageUrl?: string }>(

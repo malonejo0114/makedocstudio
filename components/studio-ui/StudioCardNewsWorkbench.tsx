@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { authFetchJson, formatDateTime } from "@/lib/studio/client";
+import { optimizeImageForUpload } from "@/lib/studio/imageUpload.client";
 
 type CreditModel = {
   id: string;
@@ -22,7 +23,6 @@ type CreditsResponse = {
 };
 
 type UploadAssetType = "reference" | "product";
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 type PlanSlide = {
   id: string;
@@ -169,15 +169,14 @@ export default function StudioCardNewsWorkbench() {
   }, []);
 
   async function uploadStudioAsset(file: File, assetType: UploadAssetType): Promise<string> {
-    if (file.size > MAX_UPLOAD_BYTES) {
-      throw new Error(
-        `${file.name} 파일 용량이 큽니다. 카드뉴스 업로드는 이미지당 최대 4MB까지 지원합니다.`,
-      );
-    }
     setUploadingAsset(assetType);
     try {
+      const optimizedFile = await optimizeImageForUpload(file, {
+        maxBytes: 3 * 1024 * 1024,
+        maxEdge: 2048,
+      });
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("assetType", assetType);
       const payload = await authFetchJson<{ imageUrl?: string; referenceImageUrl?: string }>(
         "/api/studio/reference/upload",

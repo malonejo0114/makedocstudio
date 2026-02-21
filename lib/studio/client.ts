@@ -58,6 +58,15 @@ export async function authFetchJson<T>(
       typeof payload === "object" && payload && "error" in payload
         ? String((payload as { error?: unknown }).error ?? "")
         : "";
+    const payloadTooLarge =
+      response.status === 413 ||
+      errorFromJson.includes("FUNCTION_PAYLOAD_TOO_LARGE") ||
+      rawText.includes("FUNCTION_PAYLOAD_TOO_LARGE");
+    if (payloadTooLarge) {
+      throw new Error(
+        "업로드 이미지 용량이 너무 큽니다. 3MB 이하(권장 2000px 이하)로 줄여 다시 시도해 주세요.",
+      );
+    }
     const fallbackText = rawText
       ? rawText.replace(/\s+/g, " ").slice(0, 180)
       : `요청 처리 중 오류가 발생했습니다. (HTTP ${response.status})`;
