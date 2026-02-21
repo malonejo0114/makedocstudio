@@ -11,7 +11,7 @@ export default function FaqPage() {
       faqs: [
         {
           q: "이미지 1장 생성 시 크레딧은 어떻게 차감되나요?",
-          a: "통합 크레딧에서 이미지 1장당 2크레딧이 차감됩니다. 레퍼런스 분석은 1크레딧이 차감됩니다.",
+          a: "통합 크레딧에서 기본 모델은 2크레딧, 상위버전 모델은 3크레딧이 차감됩니다. 레퍼런스 분석은 1크레딧이 차감됩니다.",
         },
         {
           q: "생성 실패 시에도 기록이 남나요?",
@@ -32,7 +32,7 @@ export default function FaqPage() {
       faqs: [
         {
           q: "How are credits deducted per generated image?",
-          a: "Unified credits are used. Each image generation costs 2 credits, and each reference analysis costs 1 credit.",
+          a: "Unified credits are used. Basic model uses 2 credits, advanced model uses 3 credits, and each reference analysis costs 1 credit.",
         },
         {
           q: "Do failed generations leave records?",

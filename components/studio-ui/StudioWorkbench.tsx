@@ -416,7 +416,7 @@ export default function StudioWorkbench() {
       .map((templateId) => templates.find((item) => item.id === templateId))
       .filter((item): item is TemplateItem => Boolean(item));
   }, [recommendedTemplateIds, templates]);
-  const selectedModelCreditsRequired = selectedModel?.price.creditsRequired ?? 1;
+  const selectedModelCreditsRequired = selectedModel?.price.creditsRequired ?? 2;
   const allRequiredCredits = prompts.length * selectedModelCreditsRequired;
   const analysisEstimatedWindow = useMemo(() => {
     const hasExtraAsset = Boolean(

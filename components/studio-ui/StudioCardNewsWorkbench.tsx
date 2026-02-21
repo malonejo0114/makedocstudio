@@ -137,7 +137,7 @@ export default function StudioCardNewsWorkbench() {
     () => slides.find((slide) => slide.id === selectedSlideId) ?? null,
     [slides, selectedSlideId],
   );
-  const totalCreditsForAll = (selectedModel?.price.creditsRequired ?? 1) * slides.length;
+  const totalCreditsForAll = (selectedModel?.price.creditsRequired ?? 2) * slides.length;
   const selectedSlideTextWarnings = useMemo(() => {
     if (!selectedSlide) return [];
     const warnings: string[] = [];

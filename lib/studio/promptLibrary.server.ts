@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const cache = new Map<string, string>();
+import { getPromptOverride } from "@/lib/promptOverrides.server";
 
 export async function loadStudioPromptTemplate(filename: string): Promise<string> {
   const key = filename.trim();
@@ -9,20 +9,13 @@ export async function loadStudioPromptTemplate(filename: string): Promise<string
     throw new Error("Prompt template filename is required.");
   }
 
-  if (process.env.NODE_ENV !== "development") {
-    const cached = cache.get(key);
-    if (cached) {
-      return cached;
-    }
+  const override = await getPromptOverride(key);
+  if (override) {
+    return override.content;
   }
 
   const filePath = path.join(process.cwd(), "prompts", key);
   const content = await fs.readFile(filePath, "utf8");
-
-  if (process.env.NODE_ENV !== "development") {
-    cache.set(key, content);
-  }
-
   return content;
 }
 

@@ -11,13 +11,13 @@ type RuntimeModel = {
 };
 
 type TierRow = {
-  tierId: "basic" | "advanced" | "premium";
+  tierId: "basic" | "advanced";
   displayName: string;
   imageModelId: string;
   model?: RuntimeModel | null;
   price?: {
-    costKrw: number;
-    sellKrw: number;
+    costKrw: number | null;
+    sellKrw: number | null;
     creditsRequired: number;
   } | null;
 };
@@ -31,7 +31,6 @@ type ModelTierPayload = {
 const TIER_LABEL: Record<TierRow["tierId"], string> = {
   basic: "기본",
   advanced: "상위버전",
-  premium: "최상위버전",
 };
 
 export default function AdminModelTierManager() {
@@ -43,7 +42,7 @@ export default function AdminModelTierManager() {
   const [message, setMessage] = useState<string | null>(null);
 
   const orderedTiers = useMemo(() => {
-    const order: Array<TierRow["tierId"]> = ["basic", "advanced", "premium"];
+    const order: Array<TierRow["tierId"]> = ["basic", "advanced"];
     return [...tiers].sort((a, b) => order.indexOf(a.tierId) - order.indexOf(b.tierId));
   }, [tiers]);
 
@@ -109,9 +108,9 @@ export default function AdminModelTierManager() {
     <section className="space-y-3 rounded-[28px] border border-black/10 bg-white p-4">
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-black/45">Model Tiers</p>
-        <h2 className="mt-1 text-xl font-semibold text-[#0B0B0C]">유저 노출 모델 3단계 매핑</h2>
+        <h2 className="mt-1 text-xl font-semibold text-[#0B0B0C]">유저 노출 모델 2단계 매핑</h2>
         <p className="mt-1 text-sm text-black/60">
-          유저 화면에는 기본/상위버전/최상위버전만 보이고, 실제 생성 AI는 여기서 매핑합니다.
+          유저 화면에는 기본/상위버전만 보이고, 실제 생성 AI는 여기서 매핑합니다.
         </p>
       </div>
 

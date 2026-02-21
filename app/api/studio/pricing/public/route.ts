@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getStudioImageModel } from "@/config/modelCatalog";
-import { getRuntimeModelTierSettings } from "@/lib/studio/modelTiers";
-import {
-  IMAGE_GENERATION_CREDITS_REQUIRED,
-  getModelPriceById,
-} from "@/lib/studio/pricing";
+import { getCreditsRequiredByTierId, getRuntimeModelTierSettings } from "@/lib/studio/modelTiers";
 
 export async function GET() {
   try {
@@ -15,7 +11,6 @@ export async function GET() {
       {
         models: tierSettings.map((tier) => {
           const model = getStudioImageModel(tier.imageModelId);
-          const priced = getModelPriceById(tier.imageModelId, "1K");
           return {
             id: tier.tierId,
             provider: model?.provider ?? "Imagen 4",
@@ -23,7 +18,7 @@ export async function GET() {
             textSuccess: model?.textSuccess ?? "중",
             speed: model?.speed ?? "보통",
             price: {
-              creditsRequired: priced?.creditsRequired ?? IMAGE_GENERATION_CREDITS_REQUIRED,
+              creditsRequired: getCreditsRequiredByTierId(tier.tierId),
             },
             highRes: null,
           };

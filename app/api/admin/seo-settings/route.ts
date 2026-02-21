@@ -8,6 +8,13 @@ import {
 } from "@/lib/seo/settings";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
+function isMissingSeoSettingsTable(error: { code?: string; message?: string } | null | undefined) {
+  if (!error) return false;
+  const code = String(error.code || "");
+  const message = String(error.message || "").toLowerCase();
+  return code === "PGRST205" || code === "42P01" || message.includes("seo_settings");
+}
+
 export async function GET() {
   try {
     const settings = await getRuntimeSeoSettings();
@@ -37,6 +44,15 @@ export async function PATCH(request: Request) {
     });
 
     if (upsert.error) {
+      if (isMissingSeoSettingsTable(upsert.error)) {
+        return NextResponse.json(
+          {
+            error:
+              "seo_settings 테이블이 없습니다. Supabase SQL Editor에서 20260222_000015_runtime_hotfixes.sql 을 먼저 실행해 주세요.",
+          },
+          { status: 500 },
+        );
+      }
       return NextResponse.json(
         { error: `SEO 설정 저장 실패 (${upsert.error.message})` },
         { status: 500 },
@@ -49,4 +65,3 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

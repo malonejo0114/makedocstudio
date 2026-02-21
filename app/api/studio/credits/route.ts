@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getStudioImageModel } from "@/config/modelCatalog";
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
-import { getRuntimeModelTierSettings } from "@/lib/studio/modelTiers";
+import { getCreditsRequiredByTierId, getRuntimeModelTierSettings } from "@/lib/studio/modelTiers";
 import {
-  IMAGE_GENERATION_CREDITS_REQUIRED,
-  getModelPriceById,
   SIGNUP_INITIAL_CREDITS,
   UNIFIED_CREDIT_BUCKET_ID,
 } from "@/lib/studio/pricing";
@@ -77,7 +75,6 @@ export async function GET(request: Request) {
     const globalBalance = creditsRes.data?.balance ?? 0;
     const pricedModels = tierSettings.map((tier) => {
       const model = getStudioImageModel(tier.imageModelId);
-      const priced = getModelPriceById(tier.imageModelId, "1K");
 
       return {
         id: tier.tierId,
@@ -87,7 +84,7 @@ export async function GET(request: Request) {
         speed: model?.speed ?? "보통",
         mappedImageModelId: tier.imageModelId,
         price: {
-          creditsRequired: priced?.creditsRequired ?? IMAGE_GENERATION_CREDITS_REQUIRED,
+          creditsRequired: getCreditsRequiredByTierId(tier.tierId),
         },
         highRes: null,
         balance: globalBalance,

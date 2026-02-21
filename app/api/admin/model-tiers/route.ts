@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import { getStudioImageModel } from "@/config/modelCatalog";
 import {
+  getCreditsRequiredByTierId,
   getAvailableRuntimeModels,
   getRuntimeModelTierSettings,
   isStudioModelTierId,
   normalizeModelTierSettings,
 } from "@/lib/studio/modelTiers";
-import { getModelPriceById } from "@/lib/studio/pricing";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 const UpdateModelTierSchema = z.object({
@@ -30,7 +30,6 @@ export async function GET() {
       {
         tiers: tiers.map((tier) => {
           const model = getStudioImageModel(tier.imageModelId);
-          const price = getModelPriceById(tier.imageModelId, "1K");
           return {
             ...tier,
             model: model
@@ -42,13 +41,11 @@ export async function GET() {
                   speed: model.speed,
                 }
               : null,
-            price: price
-              ? {
-                  costKrw: price.costKrw,
-                  sellKrw: price.sellKrw,
-                  creditsRequired: price.creditsRequired,
-                }
-              : null,
+            price: {
+              costKrw: null,
+              sellKrw: null,
+              creditsRequired: getCreditsRequiredByTierId(tier.tierId),
+            },
           };
         }),
         availableModels,

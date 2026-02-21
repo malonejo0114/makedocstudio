@@ -34,7 +34,8 @@ export default function TermsPage() {
             title: "3. 크레딧 및 과금 정책",
             list: [
               "기본 단위: 1크레딧 = 100원",
-              "레퍼런스 분석 1회당 1크레딧, 이미지 생성 1장당 2크레딧이 차감됩니다.",
+              "레퍼런스 분석 1회당 1크레딧이 차감됩니다.",
+              "이미지 생성은 기본 모델 2크레딧, 상위버전 모델 3크레딧이 차감됩니다.",
               "회원가입 시 기본 10크레딧이 지급됩니다.",
               "생성 실패 시 시스템 정책에 따라 환불 또는 재시도 처리될 수 있습니다.",
             ],
@@ -72,7 +73,8 @@ export default function TermsPage() {
             title: "3. Credit and Billing Policy",
             list: [
               "Base unit: 1 credit = KRW 100.",
-              "Each reference analysis costs 1 credit, and each image generation costs 2 credits.",
+              "Each reference analysis costs 1 credit.",
+              "Image generation uses 2 credits on Basic and 3 credits on Advanced.",
               "New users receive 10 signup credits.",
               "On generation failures, refund or retry is processed according to system policy.",
             ],

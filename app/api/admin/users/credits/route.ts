@@ -44,44 +44,71 @@ export async function POST(request: Request) {
       );
     }
 
-    const creditRes = await supabase.rpc("studio_add_credit", {
-      p_user_id: userId,
-      p_image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-      p_delta: delta,
-      p_reason: "ADMIN",
-      p_ref_id: null,
-    });
+    const current = await supabase
+      .from("user_model_credits")
+      .select("balance")
+      .eq("user_id", userId)
+      .eq("image_model_id", UNIFIED_CREDIT_BUCKET_ID)
+      .single();
 
-    if (creditRes.error || !Array.isArray(creditRes.data) || !creditRes.data[0]) {
+    if (current.error || !current.data) {
       return NextResponse.json(
-        { error: `크레딧 조정 실패 (${creditRes.error?.message ?? "unknown"})` },
+        { error: `현재 크레딧 조회 실패 (${current.error?.message ?? "unknown"})` },
         { status: 500 },
       );
     }
 
-    const row = creditRes.data[0] as { balance?: number; ledger_id?: string };
-    const balance = Number(row.balance ?? 0);
-    const ledgerId = row.ledger_id ?? null;
+    const currentBalance = Number(current.data.balance ?? 0);
+    const nextBalance = Math.max(0, currentBalance + delta);
+    const appliedDelta = nextBalance - currentBalance;
 
-    if (ledgerId && note) {
-      await supabase
-        .from("credit_ledger")
-        .update({
-          meta_json: {
-            note,
-            source: "admin-console",
-          },
-        })
-        .eq("id", ledgerId);
+    const updated = await supabase
+      .from("user_model_credits")
+      .update({ balance: nextBalance })
+      .eq("user_id", userId)
+      .eq("image_model_id", UNIFIED_CREDIT_BUCKET_ID)
+      .select("balance")
+      .single();
+
+    if (updated.error || !updated.data) {
+      return NextResponse.json(
+        { error: `크레딧 잔액 업데이트 실패 (${updated.error?.message ?? "unknown"})` },
+        { status: 500 },
+      );
+    }
+
+    const ledgerInsert = await supabase
+      .from("credit_ledger")
+      .insert({
+        user_id: userId,
+        image_model_id: UNIFIED_CREDIT_BUCKET_ID,
+        delta: appliedDelta,
+        reason: "ADMIN",
+        ref_id: null,
+        meta_json: {
+          source: "admin-console",
+          note: note || null,
+          requested_delta: delta,
+        },
+      })
+      .select("id")
+      .single();
+
+    if (ledgerInsert.error) {
+      return NextResponse.json(
+        { error: `크레딧 원장 기록 실패 (${ledgerInsert.error.message})` },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json(
       {
         ok: true,
         userId,
-        delta,
-        balance,
-        ledgerId,
+        delta: appliedDelta,
+        requestedDelta: delta,
+        balance: Number(updated.data.balance ?? 0),
+        ledgerId: ledgerInsert.data?.id ?? null,
       },
       { status: 200 },
     );

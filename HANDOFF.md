@@ -51,7 +51,7 @@ npm run dev
   - `/api/admin/prompt-lab`
 
 6. Admin model tier manager:
-- User-facing model labels are fixed to 3 tiers: `기본`, `상위버전`, `최상위버전`
+- User-facing model labels are fixed to 2 tiers: `기본`, `상위버전`
 - Actual runtime AI model mapping is configurable in admin
 - APIs/files:
   - `/api/admin/model-tiers`
@@ -81,16 +81,17 @@ npm run dev
 - Signup initial credits = 10
 - Reference analysis = 1 credit
 - Card-news planning analysis = 1 credit
-- Image generation (all models) = 2 credits
-- Public model UI exposes only 3 tiers; real model ids are admin-mapped
+- Image generation = Basic 2 credits / Advanced 3 credits
+- Public model UI exposes only 2 tiers; real model ids are admin-mapped
 
 ## Required migration (latest)
 - Apply:
-  - `supabase/migrations/20260222_000014_model_tiers_and_signup_credits.sql`
+  - `supabase/migrations/20260222_000015_runtime_hotfixes.sql`
 - This migration adds:
-  - `studio_model_tier_settings` table
-  - default tier seed rows
-  - `auth.users` trigger granting signup 10 credits + ledger row
+  - two-tier model mapping fix (`basic`, `advanced`)
+  - `prompt_overrides` table for Vercel runtime prompt editing
+  - `seo_settings` bootstrap table (if missing)
+  - credit RPC ambiguity fix + signup bonus trigger safety
 
 ## Suggested next tasks
 1. Card-news generator module (4~8 slides, template-based)

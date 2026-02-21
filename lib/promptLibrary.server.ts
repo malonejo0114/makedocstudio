@@ -1,14 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { getPromptOverride } from "@/lib/promptOverrides.server";
+
 export type PromptTemplateId = "background_only" | "full_creative";
 
 const TEMPLATE_FILES: Record<PromptTemplateId, string> = {
   background_only: "background_only.md",
   full_creative: "full_creative.md",
 };
-
-const cache = new Map<PromptTemplateId, string>();
 
 export function fillPromptTemplate(
   template: string,
@@ -25,17 +25,11 @@ export function fillPromptTemplate(
 }
 
 export async function loadPromptTemplate(id: PromptTemplateId): Promise<string> {
-  if (process.env.NODE_ENV !== "development") {
-    const cached = cache.get(id);
-    if (cached) return cached;
-  }
-
   const filename = TEMPLATE_FILES[id];
+  const override = await getPromptOverride(filename);
+  if (override) return override.content;
+
   const filePath = path.join(process.cwd(), "prompts", filename);
   const content = await fs.readFile(filePath, "utf8");
-  if (process.env.NODE_ENV !== "development") {
-    cache.set(id, content);
-  }
   return content;
 }
-

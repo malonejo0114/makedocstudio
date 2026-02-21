@@ -1,7 +1,7 @@
 import { getStudioImageModel, STUDIO_IMAGE_MODELS } from "@/config/modelCatalog";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
-export type StudioModelTierId = "basic" | "advanced" | "premium";
+export type StudioModelTierId = "basic" | "advanced";
 
 export type StudioModelTierSetting = {
   tierId: StudioModelTierId;
@@ -15,7 +15,12 @@ type StudioModelTierRow = {
   image_model_id: string | null;
 };
 
-export const STUDIO_MODEL_TIER_IDS: StudioModelTierId[] = ["basic", "advanced", "premium"];
+export const STUDIO_MODEL_TIER_IDS: StudioModelTierId[] = ["basic", "advanced"];
+
+const TIER_CREDITS_REQUIRED: Record<StudioModelTierId, number> = {
+  basic: 2,
+  advanced: 3,
+};
 
 export const DEFAULT_STUDIO_MODEL_TIER_SETTINGS: StudioModelTierSetting[] = [
   {
@@ -27,11 +32,6 @@ export const DEFAULT_STUDIO_MODEL_TIER_SETTINGS: StudioModelTierSetting[] = [
     tierId: "advanced",
     displayName: "상위버전",
     imageModelId: "imagen-4.0-generate-001",
-  },
-  {
-    tierId: "premium",
-    displayName: "최상위버전",
-    imageModelId: "imagen-4.0-ultra-generate-001",
   },
 ];
 
@@ -139,4 +139,9 @@ export function getAvailableRuntimeModels() {
     textSuccess: model.textSuccess,
     speed: model.speed,
   }));
+}
+
+export function getCreditsRequiredByTierId(tierId: StudioModelTierId | null | undefined) {
+  if (!tierId) return TIER_CREDITS_REQUIRED.basic;
+  return TIER_CREDITS_REQUIRED[tierId] ?? TIER_CREDITS_REQUIRED.basic;
 }

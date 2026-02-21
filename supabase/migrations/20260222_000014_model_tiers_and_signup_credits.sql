@@ -1,5 +1,5 @@
 -- User-facing model tier mapping + signup credit bonus.
--- - studio_model_tier_settings: basic/advanced/premium -> runtime model id mapping
+-- - studio_model_tier_settings: basic/advanced -> runtime model id mapping
 -- - auth.users trigger: grants 10 unified credits on first signup
 
 create table if not exists public.studio_model_tier_settings (
@@ -18,7 +18,7 @@ begin
   ) then
     alter table public.studio_model_tier_settings
       add constraint studio_model_tier_settings_tier_id_check
-      check (tier_id in ('basic', 'advanced', 'premium'));
+      check (tier_id in ('basic', 'advanced'));
   end if;
 end
 $$;
@@ -45,11 +45,13 @@ begin
 end
 $$;
 
+delete from public.studio_model_tier_settings
+where tier_id = 'premium';
+
 insert into public.studio_model_tier_settings (tier_id, display_name, image_model_id)
 values
   ('basic', '기본', 'imagen-4.0-fast-generate-001'),
-  ('advanced', '상위버전', 'imagen-4.0-generate-001'),
-  ('premium', '최상위버전', 'imagen-4.0-ultra-generate-001')
+  ('advanced', '상위버전', 'imagen-4.0-generate-001')
 on conflict (tier_id) do nothing;
 
 create or replace function public.studio_grant_signup_initial_credits()

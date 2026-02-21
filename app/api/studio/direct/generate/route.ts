@@ -12,12 +12,12 @@ import {
 import { buildStudioDirectImagePrompt } from "@/lib/studio/promptBuilders.server";
 import {
   CREDIT_WON_UNIT,
-  IMAGE_GENERATION_CREDITS_REQUIRED,
   getModelPriceById,
   SIGNUP_INITIAL_CREDITS,
   UNIFIED_CREDIT_BUCKET_ID,
 } from "@/lib/studio/pricing";
 import {
+  getCreditsRequiredByTierId,
   getRuntimeModelTierSettings,
   resolveModelSelectionByTier,
 } from "@/lib/studio/modelTiers";
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const creditsToConsume = IMAGE_GENERATION_CREDITS_REQUIRED;
+    const creditsToConsume = getCreditsRequiredByTierId(modelSelection.tierId);
 
     const ensureRow = await supabase.from("user_model_credits").upsert(
       {

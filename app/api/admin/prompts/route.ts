@@ -4,6 +4,12 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  getPromptOverride,
+  listPromptOverrides,
+  savePromptOverride,
+} from "@/lib/promptOverrides.server";
+
 const PROMPTS_DIR = path.join(process.cwd(), "prompts");
 
 const UpdateSchema = z.object({
@@ -24,7 +30,7 @@ function normalizeFilename(raw: string) {
 }
 
 async function listPromptFiles() {
-  const entries = await fs.readdir(PROMPTS_DIR, { withFileTypes: true });
+  const entries = await fs.readdir(PROMPTS_DIR, { withFileTypes: true }).catch(() => []);
   return entries
     .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
     .map((entry) => entry.name)
@@ -35,21 +41,23 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const filenameQuery = searchParams.get("filename");
+    const overrides = await listPromptOverrides();
 
     if (filenameQuery) {
       const filename = normalizeFilename(filenameQuery);
       const filePath = path.join(PROMPTS_DIR, filename);
-      const [content, stat] = await Promise.all([
-        fs.readFile(filePath, "utf8"),
-        fs.stat(filePath),
+      const override = overrides.get(filename) ?? (await getPromptOverride(filename));
+      const [fileContent, stat] = await Promise.all([
+        fs.readFile(filePath, "utf8").catch(() => ""),
+        fs.stat(filePath).catch(() => null),
       ]);
 
       return NextResponse.json(
         {
           item: {
             filename,
-            content,
-            updatedAt: stat.mtime.toISOString(),
+            content: override?.content ?? fileContent,
+            updatedAt: override?.updatedAt ?? stat?.mtime?.toISOString() ?? new Date().toISOString(),
           },
         },
         { status: 200 },
@@ -57,17 +65,21 @@ export async function GET(request: Request) {
     }
 
     const files = await listPromptFiles();
+    const mergedFiles = Array.from(new Set([...files, ...overrides.keys()])).sort((a, b) =>
+      a.localeCompare(b, "en"),
+    );
     const items = await Promise.all(
-      files.map(async (filename) => {
+      mergedFiles.map(async (filename) => {
         const filePath = path.join(PROMPTS_DIR, filename);
-        const [content, stat] = await Promise.all([
-          fs.readFile(filePath, "utf8"),
-          fs.stat(filePath),
+        const [fileContent, stat] = await Promise.all([
+          fs.readFile(filePath, "utf8").catch(() => ""),
+          fs.stat(filePath).catch(() => null),
         ]);
+        const override = overrides.get(filename);
         return {
           filename,
-          content,
-          updatedAt: stat.mtime.toISOString(),
+          content: override?.content ?? fileContent,
+          updatedAt: override?.updatedAt ?? stat?.mtime?.toISOString() ?? new Date().toISOString(),
         };
       }),
     );
@@ -96,18 +108,19 @@ export async function PATCH(request: Request) {
 
     const filename = normalizeFilename(parsed.data.filename);
     const filePath = path.join(PROMPTS_DIR, filename);
-
-    await fs.writeFile(filePath, parsed.data.content, "utf8");
-    const stat = await fs.stat(filePath);
+    const saved = await savePromptOverride(filename, parsed.data.content);
+    await fs.writeFile(filePath, parsed.data.content, "utf8").catch(() => {
+      // Vercel 런타임은 read-only 파일 시스템이라 실패해도 DB 오버라이드로 정상 동작한다.
+    });
 
     return NextResponse.json(
       {
         item: {
           filename,
-          content: parsed.data.content,
-          updatedAt: stat.mtime.toISOString(),
+          content: saved.content,
+          updatedAt: saved.updatedAt,
         },
-        message: "프롬프트를 저장했습니다.",
+        message: "프롬프트를 저장했습니다. (DB 오버라이드 반영)",
       },
       { status: 200 },
     );
