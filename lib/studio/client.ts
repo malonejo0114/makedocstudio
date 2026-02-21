@@ -36,11 +36,39 @@ export async function authFetchJson<T>(
     },
   });
 
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(payload?.error || "요청 처리 중 오류가 발생했습니다.");
+  const contentType = response.headers.get("content-type") || "";
+  let payload: unknown = null;
+  let rawText = "";
+
+  if (contentType.toLowerCase().includes("application/json")) {
+    payload = await response.json().catch(() => null);
+  } else {
+    rawText = await response.text().catch(() => "");
+    if (rawText) {
+      try {
+        payload = JSON.parse(rawText);
+      } catch {
+        payload = null;
+      }
+    }
   }
-  return payload as T;
+
+  if (!response.ok) {
+    const errorFromJson =
+      typeof payload === "object" && payload && "error" in payload
+        ? String((payload as { error?: unknown }).error ?? "")
+        : "";
+    const fallbackText = rawText
+      ? rawText.replace(/\s+/g, " ").slice(0, 180)
+      : `요청 처리 중 오류가 발생했습니다. (HTTP ${response.status})`;
+    throw new Error(errorFromJson || fallbackText);
+  }
+
+  if (payload !== null) {
+    return payload as T;
+  }
+
+  return {} as T;
 }
 
 export function formatKrw(value: number): string {

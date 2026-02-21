@@ -229,6 +229,29 @@ export async function buildStudioNoReferenceConceptPrompt(input: {
   });
 }
 
+export async function buildStudioCardNewsPlanPrompt(input: {
+  brief: {
+    topic: string;
+    targetAudience?: string;
+    objective?: string;
+    tone?: string;
+    slideCount: number;
+    aspectRatio: "1:1" | "4:5" | "9:16";
+    productName?: string;
+    referenceImageUrl?: string;
+    referenceImageUrls?: string[];
+    productImageUrl?: string;
+    additionalNotes?: string;
+  };
+}) {
+  const template = await loadStudioPromptTemplate(
+    process.env.STUDIO_CARDNEWS_PLAN_PROMPT || "cardnews_plan_v1.md",
+  );
+  return fillStudioTemplate(template, {
+    CARDNEWS_BRIEF_JSON: JSON.stringify(input.brief, null, 2),
+  });
+}
+
 export async function buildStudioImagePrompt(input: {
   analysis: ReferenceAnalysis;
   prompt: StudioPromptDraft;

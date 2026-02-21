@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR, Space_Grotesk } from "next/font/google";
 
+import { LanguageProvider } from "@/components/studio-ui/LanguageProvider";
+import { getRequestLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -16,8 +18,8 @@ const notoSansKr = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "마케닥 스튜디오 | MakeDoc Studio",
-  description: "레퍼런스 한 장으로, 팔리는 광고소재를 만드는 AI 크리에이티브 웹앱",
+  title: "MakeDoc Studio",
+  description: "AI ad creative studio for reference analysis, prompt editing, and image generation.",
 };
 
 export default function RootLayout({
@@ -25,9 +27,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialLocale = getRequestLocale();
+
   return (
-    <html lang="ko" className={`${spaceGrotesk.variable} ${notoSansKr.variable}`}>
-      <body>{children}</body>
+    <html lang={initialLocale} className={`${spaceGrotesk.variable} ${notoSansKr.variable}`}>
+      <body>
+        <LanguageProvider initialLocale={initialLocale}>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

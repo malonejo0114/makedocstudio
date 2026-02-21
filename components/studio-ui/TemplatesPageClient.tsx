@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useLocaleText } from "@/components/studio-ui/LanguageProvider";
+
 type TemplateItem = {
   id: string;
   title: string;
@@ -12,6 +14,26 @@ type TemplateItem = {
 };
 
 export default function TemplatesPageClient() {
+  const t = useLocaleText({
+    ko: {
+      title: "레퍼런스 템플릿 라이브러리",
+      desc: "태그로 템플릿을 탐색하고 스튜디오 작업의 시작점으로 선택하세요.",
+      searchPlaceholder: "템플릿/태그 검색",
+      loading: "불러오는 중...",
+      failed: "템플릿 조회 실패",
+      empty: "조건에 맞는 템플릿이 없습니다.",
+      defaultTemplate: "일반 템플릿",
+    },
+    en: {
+      title: "Reference Template Library",
+      desc: "Search by tags and pick templates as your Studio starting point.",
+      searchPlaceholder: "Search templates/tags",
+      loading: "Loading...",
+      failed: "Failed to load templates",
+      empty: "No templates matched your filter.",
+      defaultTemplate: "General template",
+    },
+  });
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +54,7 @@ export default function TemplatesPageClient() {
       })
       .catch((err) => {
         if (!mounted) return;
-        setError(err instanceof Error ? err.message : "템플릿 조회 실패");
+        setError(err instanceof Error ? err.message : t.failed);
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -55,13 +77,13 @@ export default function TemplatesPageClient() {
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-20 pt-8">
       <section className="rounded-[32px] border border-black/10 bg-white p-8">
         <p className="text-xs uppercase tracking-[0.2em] text-black/45">Template Library</p>
-        <h1 className="mt-2 text-4xl font-semibold text-[#0B0B0C]">레퍼런스 템플릿 라이브러리</h1>
-        <p className="mt-2 text-sm text-black/65">태그로 템플릿을 탐색하고 스튜디오 작업의 시작점으로 선택하세요.</p>
+        <h1 className="mt-2 text-4xl font-semibold text-[#0B0B0C]">{t.title}</h1>
+        <p className="mt-2 text-sm text-black/65">{t.desc}</p>
 
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="템플릿/태그 검색"
+          placeholder={t.searchPlaceholder}
           className="mt-4 w-full rounded-2xl border border-black/10 px-3 py-2.5 text-sm"
         />
 
@@ -82,11 +104,11 @@ export default function TemplatesPageClient() {
       </section>
 
       {loading ? (
-        <div className="rounded-[28px] border border-black/10 bg-white p-8 text-sm text-black/55">불러오는 중...</div>
+        <div className="rounded-[28px] border border-black/10 bg-white p-8 text-sm text-black/55">{t.loading}</div>
       ) : error ? (
         <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-8 text-sm text-rose-700">{error}</div>
       ) : items.length === 0 ? (
-        <div className="rounded-[28px] border border-black/10 bg-white p-8 text-sm text-black/55">조건에 맞는 템플릿이 없습니다.</div>
+        <div className="rounded-[28px] border border-black/10 bg-white p-8 text-sm text-black/55">{t.empty}</div>
       ) : (
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item) => (
@@ -97,7 +119,7 @@ export default function TemplatesPageClient() {
               <img src={item.imageUrl} alt={item.title} className="h-44 w-full object-cover" />
               <div className="p-3">
                 <h2 className="text-sm font-semibold text-[#0B0B0C]">{item.title}</h2>
-                <p className="mt-1 text-xs text-black/55">{item.tags.join(" · ") || "일반 템플릿"}</p>
+                <p className="mt-1 text-xs text-black/55">{item.tags.join(" · ") || t.defaultTemplate}</p>
               </div>
             </article>
           ))}

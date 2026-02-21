@@ -162,7 +162,7 @@ type CreditsResponse = {
   globalBalance: number;
 };
 
-type UploadAssetType = "reference" | "product" | "logo";
+type UploadAssetType = "reference" | "product" | "logo" | "person";
 type CopyToggles = { useSubcopy: boolean; useCTA: boolean; useBadge: boolean };
 type FontTone = "auto" | "gothic" | "myeongjo" | "rounded" | "calligraphy";
 type EffectTone = "auto" | "clean" | "shadow" | "outline" | "emboss" | "bubble";
@@ -355,9 +355,14 @@ export default function StudioWorkbench() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
   const [logoImageFile, setLogoImageFile] = useState<File | null>(null);
+  const [personImageFile, setPersonImageFile] = useState<File | null>(null);
   const [referenceImageUrl, setReferenceImageUrl] = useState("");
   const [productImageUrl, setProductImageUrl] = useState("");
   const [logoImageUrl, setLogoImageUrl] = useState("");
+  const [personImageUrl, setPersonImageUrl] = useState("");
+  const [useProductAsset, setUseProductAsset] = useState(false);
+  const [useLogoAsset, setUseLogoAsset] = useState(false);
+  const [usePersonAsset, setUsePersonAsset] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState<UploadAssetType | null>(null);
 
   const [productName, setProductName] = useState("");
@@ -422,7 +427,11 @@ export default function StudioWorkbench() {
   const allRequiredCredits = prompts.length * selectedModelCreditsRequired;
   const analysisEstimatedWindow = useMemo(() => {
     const hasExtraAsset = Boolean(
-      referenceImageUrl || uploadFile || productImageUrl || productImageFile || logoImageUrl || logoImageFile,
+      referenceImageUrl ||
+        uploadFile ||
+        (useProductAsset && (productImageUrl || productImageFile)) ||
+        (useLogoAsset && (logoImageUrl || logoImageFile)) ||
+        (usePersonAsset && (personImageUrl || personImageFile)),
     );
     if (analysisModel === "gemini-2.5-pro") {
       return hasExtraAsset ? { min: 35, max: 75 } : { min: 25, max: 55 };
@@ -432,9 +441,14 @@ export default function StudioWorkbench() {
     analysisModel,
     logoImageFile,
     logoImageUrl,
+    personImageFile,
+    personImageUrl,
     productImageFile,
     productImageUrl,
     referenceImageUrl,
+    useLogoAsset,
+    usePersonAsset,
+    useProductAsset,
     uploadFile,
   ]);
   const selectedPromptWarnings = useMemo(() => {
@@ -581,17 +595,32 @@ export default function StudioWorkbench() {
       setAnalyzing(true);
       const uploadedUrl = await ensureUploadedReference();
       const uploadedProductImageUrl =
-        productImageUrl || !productImageFile
-          ? productImageUrl
-          : await uploadStudioAsset(productImageFile, "product");
+        useProductAsset && (productImageUrl || productImageFile)
+          ? productImageUrl || !productImageFile
+            ? productImageUrl
+            : await uploadStudioAsset(productImageFile, "product")
+          : "";
       const uploadedLogoImageUrl =
-        logoImageUrl || !logoImageFile ? logoImageUrl : await uploadStudioAsset(logoImageFile, "logo");
+        useLogoAsset && (logoImageUrl || logoImageFile)
+          ? logoImageUrl || !logoImageFile
+            ? logoImageUrl
+            : await uploadStudioAsset(logoImageFile, "logo")
+          : "";
+      const uploadedPersonImageUrl =
+        usePersonAsset && (personImageUrl || personImageFile)
+          ? personImageUrl || !personImageFile
+            ? personImageUrl
+            : await uploadStudioAsset(personImageFile, "person")
+          : "";
 
       if (uploadedProductImageUrl && uploadedProductImageUrl !== productImageUrl) {
         setProductImageUrl(uploadedProductImageUrl);
       }
       if (uploadedLogoImageUrl && uploadedLogoImageUrl !== logoImageUrl) {
         setLogoImageUrl(uploadedLogoImageUrl);
+      }
+      if (uploadedPersonImageUrl && uploadedPersonImageUrl !== personImageUrl) {
+        setPersonImageUrl(uploadedPersonImageUrl);
       }
 
       const supplementalInputs = supplementalDrafts
@@ -625,8 +654,12 @@ export default function StudioWorkbench() {
               .split(",")
               .map((item) => item.trim())
               .filter(Boolean),
+            useProductImage: useProductAsset,
+            useLogoImage: useLogoAsset,
+            usePersonImage: usePersonAsset,
             productImageUrl: uploadedProductImageUrl || undefined,
             logoImageUrl: uploadedLogoImageUrl || undefined,
+            personImageUrl: uploadedPersonImageUrl || undefined,
             additionalContext: additionalContext || undefined,
             supplementalInputs: supplementalInputs.length > 0 ? supplementalInputs : undefined,
           },
@@ -1036,38 +1069,127 @@ export default function StudioWorkbench() {
               <img src={referenceImageUrl} alt="레퍼런스 이미지" className="h-24 w-full object-cover" />
             </div>
           )}
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <label className="block rounded-2xl border border-dashed border-black/15 bg-black/[0.015] p-3 text-center">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  setProductImageFile(event.target.files?.[0] ?? null);
-                  setProductImageUrl("");
-                }}
-              />
-              <span className="text-xs font-medium text-black/65">
-                {productImageFile ? `${productImageFile.name} 선택됨` : "제품 이미지 (선택)"}
-              </span>
-            </label>
-            <label className="block rounded-2xl border border-dashed border-black/15 bg-black/[0.015] p-3 text-center">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  setLogoImageFile(event.target.files?.[0] ?? null);
-                  setLogoImageUrl("");
-                }}
-              />
-              <span className="text-xs font-medium text-black/65">
-                {logoImageFile ? `${logoImageFile.name} 선택됨` : "로고 이미지 (선택)"}
-              </span>
-            </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setUseProductAsset((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setProductImageFile(null);
+                    setProductImageUrl("");
+                  }
+                  return next;
+                })
+              }
+              className={[
+                "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                useProductAsset
+                  ? "border-[#0B0B0C] bg-[#0B0B0C] text-[#D6FF4F]"
+                  : "border-black/10 bg-white text-black/65",
+              ].join(" ")}
+            >
+              {useProductAsset ? "제품 이미지 사용 중" : "제품 이미지 추가"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setUseLogoAsset((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setLogoImageFile(null);
+                    setLogoImageUrl("");
+                  }
+                  return next;
+                })
+              }
+              className={[
+                "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                useLogoAsset
+                  ? "border-[#0B0B0C] bg-[#0B0B0C] text-[#D6FF4F]"
+                  : "border-black/10 bg-white text-black/65",
+              ].join(" ")}
+            >
+              {useLogoAsset ? "로고 이미지 사용 중" : "로고 이미지 추가"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setUsePersonAsset((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setPersonImageFile(null);
+                    setPersonImageUrl("");
+                  }
+                  return next;
+                })
+              }
+              className={[
+                "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                usePersonAsset
+                  ? "border-[#0B0B0C] bg-[#0B0B0C] text-[#D6FF4F]"
+                  : "border-black/10 bg-white text-black/65",
+              ].join(" ")}
+            >
+              {usePersonAsset ? "인물 이미지 사용 중" : "인물 이미지 추가"}
+            </button>
           </div>
-          {(productImageUrl || logoImageUrl) && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
+
+          {(useProductAsset || useLogoAsset || usePersonAsset) && (
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {useProductAsset && (
+                <label className="block rounded-2xl border border-dashed border-black/15 bg-black/[0.015] p-3 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      setProductImageFile(event.target.files?.[0] ?? null);
+                      setProductImageUrl("");
+                    }}
+                  />
+                  <span className="text-xs font-medium text-black/65">
+                    {productImageFile ? `${productImageFile.name} 선택됨` : "제품 이미지 업로드"}
+                  </span>
+                </label>
+              )}
+              {useLogoAsset && (
+                <label className="block rounded-2xl border border-dashed border-black/15 bg-black/[0.015] p-3 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      setLogoImageFile(event.target.files?.[0] ?? null);
+                      setLogoImageUrl("");
+                    }}
+                  />
+                  <span className="text-xs font-medium text-black/65">
+                    {logoImageFile ? `${logoImageFile.name} 선택됨` : "로고 이미지 업로드"}
+                  </span>
+                </label>
+              )}
+              {usePersonAsset && (
+                <label className="block rounded-2xl border border-dashed border-black/15 bg-black/[0.015] p-3 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      setPersonImageFile(event.target.files?.[0] ?? null);
+                      setPersonImageUrl("");
+                    }}
+                  />
+                  <span className="text-xs font-medium text-black/65">
+                    {personImageFile ? `${personImageFile.name} 선택됨` : "인물 이미지 업로드"}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+
+          {(productImageUrl || logoImageUrl || personImageUrl) && (
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
               {productImageUrl && (
                 <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
                   <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
@@ -1082,6 +1204,14 @@ export default function StudioWorkbench() {
                     Logo
                   </p>
                   <img src={logoImageUrl} alt="로고 이미지" className="h-20 w-full object-contain p-2" />
+                </div>
+              )}
+              {personImageUrl && (
+                <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
+                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
+                    Person
+                  </p>
+                  <img src={personImageUrl} alt="인물 이미지" className="h-20 w-full object-cover" />
                 </div>
               )}
             </div>

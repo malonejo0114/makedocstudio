@@ -5,19 +5,38 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import LanguageToggle from "@/components/studio-ui/LanguageToggle";
+import { useLocaleText } from "@/components/studio-ui/LanguageProvider";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-
-const APP_LINKS = [
-  { href: "/studio-entry", label: "Studio" },
-  { href: "/projects", label: "Projects" },
-  { href: "/account", label: "Account" },
-  { href: "/guide", label: "Guide" },
-];
 
 export default function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const t = useLocaleText({
+    ko: {
+      brand: "MakeDoc Studio",
+      links: [
+        { href: "/studio-entry", label: "스튜디오" },
+        { href: "/projects", label: "프로젝트" },
+        { href: "/account", label: "계정" },
+        { href: "/guide", label: "가이드" },
+      ],
+      needLogin: "로그인 필요",
+      logout: "로그아웃",
+    },
+    en: {
+      brand: "MakeDoc Studio",
+      links: [
+        { href: "/studio-entry", label: "Studio" },
+        { href: "/projects", label: "Projects" },
+        { href: "/account", label: "Account" },
+        { href: "/guide", label: "Guide" },
+      ],
+      needLogin: "Sign in required",
+      logout: "Sign out",
+    },
+  });
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -43,11 +62,11 @@ export default function AppHeader() {
     <header className="sticky top-0 z-50 mx-auto w-full max-w-7xl px-4 pb-3 pt-4 [background:linear-gradient(to_bottom,rgba(245,245,240,0.98),rgba(245,245,240,0.94)_72%,rgba(245,245,240,0))]">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-full border border-black/10 bg-[rgba(245,245,240,0.88)] px-4 py-3 shadow-[0_20px_45px_-35px_rgba(0,0,0,0.5)] backdrop-blur-xl">
         <Link href="/" className="rounded-full bg-[#0B0B0C] px-4 py-2 text-sm font-semibold text-[#D6FF4F]">
-          MakeDoc Studio
+          {t.brand}
         </Link>
 
         <nav className="flex items-center gap-1">
-          {APP_LINKS.map((item) => (
+          {t.links.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -64,13 +83,14 @@ export default function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-black/50 md:inline">{email || "로그인 필요"}</span>
+          <LanguageToggle />
+          <span className="hidden text-xs text-black/50 md:inline">{email || t.needLogin}</span>
           <button
             type="button"
             onClick={() => void onSignOut()}
             className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70 hover:bg-black/5"
           >
-            로그아웃
+            {t.logout}
           </button>
         </div>
       </div>

@@ -68,8 +68,13 @@ export type ProductContext = {
   ratio?: "1:1" | "4:5" | "9:16";
   benefits?: string[];
   bannedWords?: string[];
+  useProductImage?: boolean;
+  useLogoImage?: boolean;
+  usePersonImage?: boolean;
+  referenceImageUrls?: string[];
   productImageUrl?: string;
   logoImageUrl?: string;
+  personImageUrl?: string;
   typographyReferenceImageUrl?: string;
   additionalContext?: string;
   supplementalInputs?: Array<{

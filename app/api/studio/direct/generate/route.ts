@@ -28,6 +28,7 @@ const TextStyleSlotSchema = z.object({
 
 const DirectGenerateBodySchema = z.object({
   referenceImageUrl: z.string().optional(),
+  referenceImageUrls: z.array(z.string()).max(5).optional(),
   productImageUrl: z.string().optional(),
   productName: z.string().optional(),
   imageModelId: z.string().min(1),
@@ -177,7 +178,18 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const referenceImageUrl = body.referenceImageUrl?.trim() || "";
+    const normalizedReferenceImageUrls = Array.from(
+      new Set(
+        (body.referenceImageUrls ?? [])
+          .map((item) => item.trim())
+          .filter(Boolean),
+      ),
+    ).slice(0, 5);
+    const singleReferenceImageUrl = body.referenceImageUrl?.trim() || "";
+    if (singleReferenceImageUrl && !normalizedReferenceImageUrls.includes(singleReferenceImageUrl)) {
+      normalizedReferenceImageUrls.unshift(singleReferenceImageUrl);
+    }
+    const referenceImageUrl = normalizedReferenceImageUrls[0] || "";
     const productImageUrl = body.productImageUrl?.trim() || "";
     const projectReferenceUrl = referenceImageUrl || productImageUrl || "about:blank";
 
@@ -299,6 +311,7 @@ export async function POST(request: Request) {
       mode: "DIRECT",
       productName: body.productName?.trim() || "",
       referenceImageUrl: referenceImageUrl || undefined,
+      referenceImageUrls: normalizedReferenceImageUrls,
       productImageUrl: productImageUrl || undefined,
       extraTexts: normalizedExtraTexts,
     };
@@ -378,10 +391,18 @@ export async function POST(request: Request) {
       cta: body.cta,
     });
 
-    const [referenceInlineData, productInlineData] = await Promise.all([
+    const [referenceInlineData, productInlineData, additionalReferenceInlineDataRaw] = await Promise.all([
       toInlineDataFromUrlSafe(referenceImageUrl || null, "레퍼런스 이미지"),
       toInlineDataFromUrlSafe(productImageUrl || null, "제품 이미지"),
+      Promise.all(
+        normalizedReferenceImageUrls.slice(1, 5).map((refUrl, index) =>
+          toInlineDataFromUrlSafe(refUrl, `추가 레퍼런스 이미지 ${index + 2}`),
+        ),
+      ),
     ]);
+    const additionalReferenceInlineData = additionalReferenceInlineDataRaw.filter(
+      (item): item is InlineData => Boolean(item),
+    );
 
     const runtimeCandidates = resolveRuntimeModelCandidates(body.imageModelId);
     let generated: Awaited<ReturnType<typeof generateImageWithGeminiAdvanced>> | null = null;
@@ -396,6 +417,9 @@ export async function POST(request: Request) {
           aspectRatio: body.aspectRatio,
           responseModalities: ["IMAGE"],
           ...(referenceInlineData ? { referenceInlineData } : {}),
+          ...(additionalReferenceInlineData.length > 0
+            ? { referenceInlineDataList: additionalReferenceInlineData }
+            : {}),
           ...(productInlineData ? { productInlineData } : {}),
         });
         break;

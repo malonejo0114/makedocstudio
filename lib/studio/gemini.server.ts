@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   buildStudioAnalyzePrompt,
+  buildStudioCardNewsPlanPrompt,
   buildStudioNoReferenceConceptPrompt,
   normalizeKoreanTextLengthWarnings,
   normalizeCopyToggles,
@@ -65,6 +66,20 @@ function extractTextFromGemini(json: any): string {
 export type InlineData = {
   mimeType: string;
   data: string;
+};
+
+export type CardNewsSlideDraft = {
+  index: number;
+  title: string;
+  headline: string;
+  subhead: string;
+  body: string;
+  cta: string;
+  badge: string;
+  frameworkTag: string;
+  visual: string;
+  narrative: string;
+  designCue: string;
 };
 
 async function toInlineDataFromUrl(imageUrl: string): Promise<InlineData> {
@@ -844,6 +859,266 @@ export async function generateConceptPromptsWithoutReference(input: {
       ...fallback,
       warnings: [`${message} 기본 템플릿으로 이어서 작업할 수 있습니다.`],
       recommendedTemplateIds: [],
+    };
+  }
+}
+
+function buildFallbackCardNewsSlides(input: {
+  topic: string;
+  tone: string;
+  targetAudience: string;
+  objective: string;
+  slideCount: number;
+}): CardNewsSlideDraft[] {
+  const baseTopic = input.topic.trim() || "브랜드 메시지";
+  const audience = input.targetAudience.trim() || "핵심 타깃";
+  const objective = input.objective.trim() || "행동 유도";
+  const tone = input.tone.trim() || "세련된";
+  const count = Math.max(3, Math.min(8, input.slideCount));
+
+  const templates = [
+    {
+      title: "문제 제기",
+      headline: `${baseTopic}, 왜 지금 중요할까`,
+      subhead: `${audience}가 공감하는 문제를 먼저 제시합니다.`,
+      body: `${audience}가 자주 겪는 불편을 구체적으로 짚고, 왜 이 문제가 지금 더 중요해졌는지 맥락을 제공합니다.`,
+      cta: "",
+      badge: "핵심",
+      frameworkTag: "AIDA:Attention | 기승전결:기 | MECE:문제정의",
+      narrative: "첫 슬라이드에서 문제 인식을 만들고 시선을 멈추게 합니다.",
+      designCue: `${tone} 분위기, 강한 대비, 타이틀 중심 구도`,
+    },
+    {
+      title: "해결 제안",
+      headline: `${baseTopic} 해결 포인트`,
+      subhead: `복잡한 내용을 한 문장으로 단순화해 전달합니다.`,
+      body: `핵심 해결 아이디어를 단계별로 풀어 보여주고, 사용자 입장에서 바로 이해할 수 있도록 쉬운 문장으로 정리합니다.`,
+      cta: "",
+      badge: "",
+      frameworkTag: "AIDA:Interest | 기승전결:승 | MECE:해결전략",
+      narrative: "해결 방향을 명확히 보여줍니다.",
+      designCue: "핵심 오브젝트 확대, 여백 중심",
+    },
+    {
+      title: "근거 제시",
+      headline: `왜 믿어도 될까`,
+      subhead: `수치/사실/경험 기반 근거를 한눈에 배치합니다.`,
+      body: `인증, 후기, 수치 데이터를 중복 없이 분리해 신뢰 근거를 제시하고 구매 불안을 줄이는 정보를 제공합니다.`,
+      cta: "",
+      badge: "근거",
+      frameworkTag: "AIDA:Desire | 기승전결:전 | MECE:증거자료",
+      narrative: "신뢰를 높이는 정보 슬라이드입니다.",
+      designCue: "정보 카드 스타일, 가독성 높은 레이아웃",
+    },
+    {
+      title: "사용 장면",
+      headline: `실제 사용은 이렇게`,
+      subhead: `${audience}의 실제 맥락에서 쓰는 장면을 보여줍니다.`,
+      body: `실제 상황에서 어떤 변화를 만들 수 있는지 전후 맥락을 연결해 보여주고 사용 장벽을 낮춥니다.`,
+      cta: "",
+      badge: "",
+      frameworkTag: "AIDA:Desire | 기승전결:전 | MECE:사용맥락",
+      narrative: "실사용 상상을 돕는 장면 연출입니다.",
+      designCue: "라이프스타일 컷, 자연광 느낌",
+    },
+    {
+      title: "가치 요약",
+      headline: `${baseTopic} 한눈에 정리`,
+      subhead: "핵심 장점 2~3개를 짧게 요약합니다.",
+      body: `핵심 효익을 중복 없이 세 가지 관점으로 요약해 기억하기 쉽게 정리하고 선택 근거를 강화합니다.`,
+      cta: "",
+      badge: "요약",
+      frameworkTag: "AIDA:Desire | 기승전결:결 | MECE:가치요약",
+      narrative: "메시지를 다시 정리해 기억에 남깁니다.",
+      designCue: "아이콘/포인트 컬러 강조",
+    },
+    {
+      title: "행동 유도",
+      headline: `지금 시작해 보세요`,
+      subhead: objective,
+      body: `지금 행동해야 하는 이유와 기대 결과를 명확히 제시하고, 클릭 또는 문의로 이어지는 마지막 장벽을 낮춥니다.`,
+      cta: "자세히 보기",
+      badge: "",
+      frameworkTag: "AIDA:Action | 기승전결:결 | MECE:행동유도",
+      narrative: "마지막 슬라이드에서 행동 전환을 유도합니다.",
+      designCue: "CTA 중심 하단 배치, 여백 넉넉하게",
+    },
+  ];
+
+  return Array.from({ length: count }).map((_, index) => {
+    const seed = templates[Math.min(index, templates.length - 1)];
+      return {
+        index: index + 1,
+        title: seed.title,
+        headline: seed.headline,
+        subhead: seed.subhead,
+        body: seed.body,
+        cta: index === count - 1 ? (seed.cta || "지금 문의") : "",
+        badge: seed.badge,
+        frameworkTag: seed.frameworkTag,
+        visual: `${tone} 카드뉴스 비주얼, ${seed.designCue}, ${baseTopic} 중심, 텍스트 가독성 높은 배경`,
+        narrative: seed.narrative,
+        designCue: seed.designCue,
+    };
+  });
+}
+
+function normalizeCardNewsSlides(
+  rawSlides: unknown,
+  fallbackSlides: CardNewsSlideDraft[],
+  expectedCount: number,
+): CardNewsSlideDraft[] {
+  if (!Array.isArray(rawSlides) || rawSlides.length === 0) {
+    return fallbackSlides;
+  }
+
+  const slides = rawSlides
+    .slice(0, expectedCount)
+    .map((slide, index) => {
+      const source = ensureRecord(slide);
+      const fallback = fallbackSlides[Math.min(index, fallbackSlides.length - 1)];
+      return {
+        index: index + 1,
+        title: ensureText(source.title, fallback.title),
+        headline: ensureText(source.headline, fallback.headline),
+        subhead: ensureText(source.subhead, fallback.subhead),
+        body: ensureText(source.body, fallback.body),
+        cta: ensureText(source.cta, index === expectedCount - 1 ? fallback.cta : ""),
+        badge: ensureText(source.badge, fallback.badge),
+        frameworkTag: ensureText(source.frameworkTag, fallback.frameworkTag),
+        visual: ensureText(source.visual, fallback.visual),
+        narrative: ensureText(source.narrative, fallback.narrative),
+        designCue: ensureText(source.designCue, fallback.designCue),
+      } satisfies CardNewsSlideDraft;
+    })
+    .filter((item) => item.headline.trim().length > 0 && item.visual.trim().length > 0);
+
+  if (slides.length === 0) return fallbackSlides;
+  return slides;
+}
+
+export async function generateCardNewsPlan(input: {
+  topic: string;
+  targetAudience?: string;
+  objective?: string;
+  tone?: string;
+  slideCount: number;
+  aspectRatio: "1:1" | "4:5" | "9:16";
+  productName?: string;
+  referenceImageUrl?: string;
+  referenceImageUrls?: string[];
+  productImageUrl?: string;
+  additionalNotes?: string;
+  analysisModel?: string;
+}): Promise<{
+  title: string;
+  concept: string;
+  slides: CardNewsSlideDraft[];
+  warnings: string[];
+}> {
+  const normalizedCount = Math.max(3, Math.min(8, Number(input.slideCount) || 5));
+  const fallbackSlides = buildFallbackCardNewsSlides({
+    topic: input.topic,
+    tone: input.tone ?? "",
+    targetAudience: input.targetAudience ?? "",
+    objective: input.objective ?? "",
+    slideCount: normalizedCount,
+  });
+
+  try {
+    const prompt = await buildStudioCardNewsPlanPrompt({
+      brief: {
+        topic: input.topic,
+        targetAudience: input.targetAudience,
+        objective: input.objective,
+        tone: input.tone,
+        slideCount: normalizedCount,
+        aspectRatio: input.aspectRatio,
+        productName: input.productName,
+        referenceImageUrl: input.referenceImageUrl,
+        referenceImageUrls:
+          input.referenceImageUrls && input.referenceImageUrls.length > 0
+            ? input.referenceImageUrls
+            : input.referenceImageUrl
+              ? [input.referenceImageUrl]
+              : [],
+        productImageUrl: input.productImageUrl,
+        additionalNotes: input.additionalNotes,
+      },
+    });
+
+    const parts: Array<Record<string, unknown>> = [{ text: prompt }];
+    const referenceUrls = Array.from(
+      new Set(
+        (input.referenceImageUrls ?? [])
+          .map((item) => item.trim())
+          .filter(Boolean),
+      ),
+    ).slice(0, 5);
+    if (referenceUrls.length === 0 && input.referenceImageUrl?.trim()) {
+      referenceUrls.push(input.referenceImageUrl.trim());
+    }
+    for (let i = 0; i < referenceUrls.length; i += 1) {
+      const refUrl = referenceUrls[i];
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const inlineData = await toInlineDataFromUrl(refUrl);
+        parts.push({ text: `Reference style image #${i + 1}` });
+        parts.push({ inlineData });
+      } catch {
+        // ignore reference loading failures
+      }
+    }
+    if (input.productImageUrl) {
+      try {
+        const inlineData = await toInlineDataFromUrl(input.productImageUrl);
+        parts.push({ text: "Product image reference" });
+        parts.push({ inlineData });
+      } catch {
+        // ignore product loading failures
+      }
+    }
+
+    const response = await callGeminiModel(
+      input.analysisModel || process.env.STUDIO_CARDNEWS_PLAN_MODEL || "gemini-2.5-flash",
+      {
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          temperature: 0.4,
+        },
+      },
+    );
+
+    const text = extractTextFromGemini(response);
+    const parsed = tryParseJson<{
+      title?: string;
+      concept?: string;
+      slides?: unknown[];
+      warnings?: unknown[];
+    }>(text);
+
+    if (!parsed) {
+      return {
+        title: `${input.topic.trim() || "카드뉴스"} 카드뉴스`,
+        concept: "핵심 메시지를 단계적으로 전달하는 카드뉴스 구조",
+        slides: fallbackSlides,
+        warnings: ["기획 응답 파싱에 실패해 기본 카드뉴스 구조를 사용했습니다."],
+      };
+    }
+
+    return {
+      title: ensureText(parsed.title, `${input.topic.trim() || "카드뉴스"} 카드뉴스`),
+      concept: ensureText(parsed.concept, "핵심 메시지 중심 카드뉴스"),
+      slides: normalizeCardNewsSlides(parsed.slides, fallbackSlides, normalizedCount),
+      warnings: ensureStringArray(parsed.warnings).slice(0, 8),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "카드뉴스 기획 생성 실패";
+    return {
+      title: `${input.topic.trim() || "카드뉴스"} 카드뉴스`,
+      concept: "핵심 메시지를 단계적으로 전달하는 카드뉴스 구조",
+      slides: fallbackSlides,
+      warnings: [`${message} 기본 카드뉴스 템플릿으로 이어서 작업할 수 있습니다.`],
     };
   }
 }

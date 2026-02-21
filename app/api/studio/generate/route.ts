@@ -720,11 +720,13 @@ export async function POST(request: Request) {
     }
     const productImageUrl = getOptionalUrlValue(productContext, "productImageUrl");
     const logoImageUrl = getOptionalUrlValue(productContext, "logoImageUrl");
-    const [productInlineData, logoInlineData] = await Promise.all([
+    const personImageUrl = getOptionalUrlValue(productContext, "personImageUrl");
+    const [productInlineData, logoInlineData, personInlineData] = await Promise.all([
       productImageUrl
         ? toInlineDataFromUrlSafe(productImageUrl, "제품 이미지")
         : Promise.resolve(null),
       logoImageUrl ? toInlineDataFromUrlSafe(logoImageUrl, "로고 이미지") : Promise.resolve(null),
+      personImageUrl ? toInlineDataFromUrlSafe(personImageUrl, "인물 이미지") : Promise.resolve(null),
     ]);
 
     const typographyInlineData =
@@ -777,6 +779,7 @@ export async function POST(request: Request) {
             ...(typographyInlineData ? { typographyInlineData } : {}),
             ...(productInlineData ? { productInlineData } : {}),
             ...(logoInlineData ? { logoInlineData } : {}),
+            ...(personInlineData ? { personInlineData } : {}),
           });
           break;
         } catch (error) {

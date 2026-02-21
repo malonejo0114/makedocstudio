@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
-type AssetType = "reference" | "product" | "logo";
+type AssetType = "reference" | "product" | "logo" | "person";
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function sanitizeFilename(value: string): string {
   return value
@@ -29,7 +30,7 @@ function normalizeExtension(file: File): string {
 }
 
 function parseAssetType(value: FormDataEntryValue | null): AssetType {
-  if (value === "product" || value === "logo") {
+  if (value === "product" || value === "logo" || value === "person") {
     return value;
   }
   return "reference";
@@ -46,6 +47,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "업로드할 이미지를 선택해 주세요." },
         { status: 400 },
+      );
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: "이미지 용량이 너무 큽니다. 파일당 최대 4MB까지 업로드할 수 있습니다." },
+        { status: 413 },
       );
     }
 

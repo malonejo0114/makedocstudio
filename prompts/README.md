@@ -25,6 +25,9 @@ This folder contains prompt templates used by MakeDoc Studio generation and anal
 - `studio_direct_generation.md`
   - Purpose: Build the final single-image generation prompt from direct user inputs (without reference analysis).
 
+- `cardnews_plan_v1.md`
+  - Purpose: Generate a slide-by-slide card-news plan (story flow + copy + visual directions).
+
 - `reference_analysis_v4.md`
   - Purpose: Analyze reference and output stronger typography/style-transfer-ready structured JSON.
 

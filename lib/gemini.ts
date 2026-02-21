@@ -607,9 +607,11 @@ export async function generateImageWithGeminiAdvanced(input: {
   imageSize?: string;
   responseModalities?: Array<"TEXT" | "IMAGE">;
   referenceInlineData?: InlineData;
+  referenceInlineDataList?: InlineData[];
   typographyInlineData?: InlineData;
   productInlineData?: InlineData;
   logoInlineData?: InlineData;
+  personInlineData?: InlineData;
   guideOverlayInlineData?: InlineData;
 }) {
   const parts: Array<Record<string, unknown>> = [{ text: input.prompt }];
@@ -617,6 +619,12 @@ export async function generateImageWithGeminiAdvanced(input: {
   if (input.referenceInlineData) {
     parts.push({ text: "Reference image for style guidance only." });
     parts.push({ inlineData: input.referenceInlineData });
+  }
+  if (Array.isArray(input.referenceInlineDataList) && input.referenceInlineDataList.length > 0) {
+    input.referenceInlineDataList.forEach((inline, idx) => {
+      parts.push({ text: `Additional reference image #${idx + 2} for style consistency.` });
+      parts.push({ inlineData: inline });
+    });
   }
 
   if (input.typographyInlineData) {
@@ -636,6 +644,13 @@ export async function generateImageWithGeminiAdvanced(input: {
       text: "Brand logo reference. Preserve the logo identity and place it naturally in the composition.",
     });
     parts.push({ inlineData: input.logoInlineData });
+  }
+
+  if (input.personInlineData) {
+    parts.push({
+      text: "Person/talent reference. Keep facial identity and overall vibe naturally.",
+    });
+    parts.push({ inlineData: input.personInlineData });
   }
 
   if (input.guideOverlayInlineData) {
