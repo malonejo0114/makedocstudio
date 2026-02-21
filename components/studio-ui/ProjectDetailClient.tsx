@@ -283,7 +283,13 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
                   key={generation.id}
                   className="overflow-hidden rounded-2xl border border-black/10 bg-white"
                 >
-                  <img src={generation.imageUrl} alt={generation.id} className="h-44 w-full object-cover" />
+                  <div className="aspect-square w-full bg-black/[0.04] p-2">
+                    <img
+                      src={generation.imageUrl}
+                      alt={generation.id}
+                      className="h-full w-full rounded-xl border border-black/10 bg-white object-contain"
+                    />
+                  </div>
                   <div className="space-y-1 p-3 text-xs text-black/65">
                     <p className="font-semibold text-black/80">{prompt?.title || generation.promptId}</p>
                     <p>{generation.imageModelId}</p>
