@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
+function isMissingAnalysisJsonColumn(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+) {
+  if (!error) return false;
+  const code = String(error.code || "");
+  const message = String(error.message || "").toLowerCase();
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    message.includes("analysis_json") ||
+    (message.includes("column") && message.includes("templates"))
+  );
+}
+
 function containsQuery(title: string, tags: string[], query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -28,7 +42,7 @@ export async function GET(request: Request) {
     }
 
     let rows: any = await req.limit(120);
-    if (rows.error && rows.error.code === "42703") {
+    if (isMissingAnalysisJsonColumn(rows.error)) {
       let fallbackReq = supabase
         .from("templates")
         .select("id, title, tags, image_url, is_featured, created_at")

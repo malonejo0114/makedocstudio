@@ -52,6 +52,20 @@ function tryParseAnalysisJson(raw: string): unknown | null {
   }
 }
 
+function isMissingAnalysisJsonColumn(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+) {
+  if (!error) return false;
+  const code = String(error.code || "");
+  const message = String(error.message || "").toLowerCase();
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    message.includes("analysis_json") ||
+    message.includes("column") && message.includes("templates")
+  );
+}
+
 export async function GET() {
   try {
     const supabase = getSupabaseServiceClient();
@@ -61,7 +75,7 @@ export async function GET() {
       .order("created_at", { ascending: false })
       .limit(300);
 
-    if (rows.error && rows.error.code === "42703") {
+    if (isMissingAnalysisJsonColumn(rows.error)) {
       rows = await supabase
         .from("templates")
         .select("id, title, tags, image_url, is_featured, created_at, updated_at")
@@ -147,7 +161,7 @@ export async function POST(request: Request) {
       .select("id, title, tags, image_url, analysis_json, is_featured, created_at, updated_at")
       .single();
 
-    if (insert.error && insert.error.code === "42703") {
+    if (isMissingAnalysisJsonColumn(insert.error)) {
       insert = await supabase
         .from("templates")
         .insert({
@@ -214,7 +228,7 @@ export async function PATCH(request: Request) {
       .select("id, title, tags, image_url, analysis_json, is_featured, created_at, updated_at")
       .single();
 
-    if (row.error && row.error.code === "42703") {
+    if (isMissingAnalysisJsonColumn(row.error)) {
       const fallbackUpdates = { ...updates };
       delete fallbackUpdates.analysis_json;
       row = await supabase
