@@ -14,6 +14,10 @@ create table if not exists public.studio_model_tier_settings (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+-- Remove legacy tier rows before tightening constraint.
+delete from public.studio_model_tier_settings
+where tier_id not in ('basic', 'advanced');
+
 do $$
 begin
   if exists (
@@ -56,14 +60,14 @@ begin
 end
 $$;
 
-delete from public.studio_model_tier_settings
-where tier_id = 'premium';
-
 insert into public.studio_model_tier_settings (tier_id, display_name, image_model_id)
 values
   ('basic', '기본', 'imagen-4.0-fast-generate-001'),
   ('advanced', '상위버전', 'imagen-4.0-generate-001')
-on conflict (tier_id) do nothing;
+on conflict (tier_id) do update
+set
+  display_name = excluded.display_name,
+  image_model_id = excluded.image_model_id;
 
 create or replace function public.studio_grant_signup_initial_credits()
 returns trigger

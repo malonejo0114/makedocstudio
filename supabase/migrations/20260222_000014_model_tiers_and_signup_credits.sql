@@ -9,6 +9,9 @@ create table if not exists public.studio_model_tier_settings (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+delete from public.studio_model_tier_settings
+where tier_id not in ('basic', 'advanced');
+
 do $$
 begin
   if not exists (
