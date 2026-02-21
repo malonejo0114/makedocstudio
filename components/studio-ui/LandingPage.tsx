@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-import { useLocaleText } from "@/components/studio-ui/LanguageProvider";
+import { useLanguage, useLocaleText } from "@/components/studio-ui/LanguageProvider";
 import type { Locale } from "@/lib/i18n/config";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -24,6 +24,7 @@ const LANDING_MESSAGES: Record<
     authFailed: string;
     signedOut: string;
     googleFailed: string;
+    kakaoFailed: string;
     heroTitle: string;
     heroSub: string;
     startStudio: string;
@@ -43,6 +44,8 @@ const LANDING_MESSAGES: Record<
     or: string;
     googleContinue: string;
     googleRedirecting: string;
+    kakaoContinue: string;
+    kakaoRedirecting: string;
     tutorial: string;
     featureLabel: string;
     ready: string;
@@ -73,6 +76,7 @@ const LANDING_MESSAGES: Record<
     authFailed: "인증에 실패했습니다.",
     signedOut: "로그아웃되었습니다.",
     googleFailed: "Google 로그인에 실패했습니다.",
+    kakaoFailed: "카카오 로그인에 실패했습니다.",
     heroTitle: "레퍼런스 한 장으로\n팔리는 광고소재를.",
     heroSub: "분석부터 생성, 다운로드까지 한 화면에서 빠르게 완성합니다.",
     startStudio: "스튜디오 시작하기",
@@ -92,6 +96,8 @@ const LANDING_MESSAGES: Record<
     or: "또는",
     googleContinue: "Google로 계속하기",
     googleRedirecting: "Google로 이동 중...",
+    kakaoContinue: "카카오로 계속하기",
+    kakaoRedirecting: "카카오로 이동 중...",
     tutorial: "이용 튜토리얼 보기",
     featureLabel: "Feature",
     ready: "Ready",
@@ -121,6 +127,7 @@ const LANDING_MESSAGES: Record<
     authFailed: "Authentication failed.",
     signedOut: "You have been signed out.",
     googleFailed: "Google sign-in failed.",
+    kakaoFailed: "Kakao sign-in failed.",
     heroTitle: "Turn one reference image\ninto high-converting ad creatives.",
     heroSub: "From analysis to generation to download, all in one screen.",
     startStudio: "Start Studio",
@@ -140,6 +147,8 @@ const LANDING_MESSAGES: Record<
     or: "or",
     googleContinue: "Continue with Google",
     googleRedirecting: "Redirecting to Google...",
+    kakaoContinue: "Continue with Kakao",
+    kakaoRedirecting: "Redirecting to Kakao...",
     tutorial: "Open tutorial",
     featureLabel: "Feature",
     ready: "Ready",
@@ -163,12 +172,13 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 export default function LandingPage() {
   const router = useRouter();
+  const { locale } = useLanguage();
   const t = useLocaleText(LANDING_MESSAGES);
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
+  const [oauthProvider, setOauthProvider] = useState<"google" | "kakao" | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -240,16 +250,16 @@ export default function LandingPage() {
     router.refresh();
   }
 
-  async function onGoogleSignIn() {
+  async function onOAuthSignIn(provider: "google" | "kakao") {
     setError(null);
     setMessage(null);
-    setOauthLoading(true);
+    setOauthProvider(provider);
     try {
       const supabase = getSupabaseBrowserClient();
       const redirectTo =
         typeof window === "undefined" ? undefined : `${window.location.origin}/studio`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo,
         },
@@ -258,8 +268,26 @@ export default function LandingPage() {
         throw oauthError;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.googleFailed);
-      setOauthLoading(false);
+      const rawMessage = err instanceof Error ? err.message : "";
+      const unsupportedProvider =
+        rawMessage.toLowerCase().includes("unsupported provider") ||
+        rawMessage.toLowerCase().includes("provider is not enabled");
+      if (unsupportedProvider) {
+        setError(
+          provider === "kakao"
+            ? "카카오 로그인이 아직 설정되지 않았습니다. 관리자(Supabase Authentication > Providers > Kakao)에서 활성화해 주세요."
+            : "Google 로그인이 아직 설정되지 않았습니다. 관리자(Supabase Authentication > Providers > Google)에서 활성화해 주세요.",
+        );
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : provider === "kakao"
+              ? t.kakaoFailed
+              : t.googleFailed,
+        );
+      }
+      setOauthProvider(null);
     }
   }
 
@@ -402,7 +430,7 @@ export default function LandingPage() {
                   />
                   <button
                     type="submit"
-                    disabled={loading || oauthLoading}
+                    disabled={loading || oauthProvider !== null}
                     className="w-full rounded-full bg-[#0B0B0C] px-4 py-2.5 text-sm font-semibold text-[#D6FF4F] transition hover:-translate-y-0.5 disabled:opacity-60"
                   >
                     {loading ? t.processing : authMode === "signin" ? t.signin : t.signupAndStart}
@@ -416,15 +444,28 @@ export default function LandingPage() {
 
                   <button
                     type="button"
-                    onClick={() => void onGoogleSignIn()}
-                    disabled={loading || oauthLoading}
+                    onClick={() => void onOAuthSignIn("google")}
+                    disabled={loading || oauthProvider !== null}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-black/15 bg-white px-4 py-2.5 text-sm font-semibold text-black/80 transition hover:bg-black/[0.03] disabled:opacity-60"
                   >
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-black/15 text-xs">
                       G
                     </span>
-                    {oauthLoading ? t.googleRedirecting : t.googleContinue}
+                    {oauthProvider === "google" ? t.googleRedirecting : t.googleContinue}
                   </button>
+                  {locale === "ko" ? (
+                    <button
+                      type="button"
+                      onClick={() => void onOAuthSignIn("kakao")}
+                      disabled={loading || oauthProvider !== null}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-black/15 bg-[#FEE500] px-4 py-2.5 text-sm font-semibold text-[#191919] transition hover:brightness-95 disabled:opacity-60"
+                    >
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-black/20 text-[10px] font-black">
+                        K
+                      </span>
+                      {oauthProvider === "kakao" ? t.kakaoRedirecting : t.kakaoContinue}
+                    </button>
+                  ) : null}
                 </form>
               )}
 

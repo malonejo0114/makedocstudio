@@ -18,7 +18,7 @@ export default function GuidePage() {
         {
           step: "Step 0",
           title: "준비",
-          desc: "로그인 후 스튜디오에 진입합니다. Google 로그인 또는 이메일 로그인 둘 다 사용 가능합니다.",
+          desc: "로그인 후 스튜디오에 진입합니다. 카카오/Google/이메일 로그인 모두 사용할 수 있습니다.",
         },
         {
           step: "Step 1",
