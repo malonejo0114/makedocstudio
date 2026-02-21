@@ -691,7 +691,7 @@ export default function StudioWorkbench() {
           : "레퍼런스 없이 3개 컨셉 프롬프트를 생성했습니다.";
       setMessage(
         (payload.analysisCreditUsed ?? 0) > 0
-          ? `${baseMessage} Pro 분석 1크레딧이 차감되었습니다.`
+          ? `${baseMessage} 분석 ${(payload.analysisCreditUsed ?? 0) || 1}크레딧이 차감되었습니다.`
           : baseMessage,
       );
       setMobileStep(2);

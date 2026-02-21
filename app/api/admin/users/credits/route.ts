@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
+import { SIGNUP_INITIAL_CREDITS, UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 const AdjustCreditSchema = z.object({
@@ -24,6 +24,25 @@ export async function POST(request: Request) {
 
     const { userId, delta, note } = parsed.data;
     const supabase = getSupabaseServiceClient();
+
+    const ensureRow = await supabase.from("user_model_credits").upsert(
+      {
+        user_id: userId,
+        image_model_id: UNIFIED_CREDIT_BUCKET_ID,
+        balance: SIGNUP_INITIAL_CREDITS,
+      },
+      {
+        onConflict: "user_id,image_model_id",
+        ignoreDuplicates: true,
+      },
+    );
+
+    if (ensureRow.error) {
+      return NextResponse.json(
+        { error: `크레딧 행 초기화 실패 (${ensureRow.error.message})` },
+        { status: 500 },
+      );
+    }
 
     const creditRes = await supabase.rpc("studio_add_credit", {
       p_user_id: userId,
@@ -71,4 +90,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

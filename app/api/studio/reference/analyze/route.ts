@@ -6,7 +6,11 @@ import {
   analyzeReferenceAndBuildPrompts,
   generateConceptPromptsWithoutReference,
 } from "@/lib/studio/gemini.server";
-import { UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
+import {
+  ANALYSIS_CREDITS_REQUIRED,
+  SIGNUP_INITIAL_CREDITS,
+  UNIFIED_CREDIT_BUCKET_ID,
+} from "@/lib/studio/pricing";
 import type { CopyToggles, ProductContext } from "@/lib/studio/types";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
@@ -105,7 +109,7 @@ function filterWarningsByAssetSelection(
 export async function POST(request: Request) {
   const supabase = getSupabaseServiceClient();
   let chargedUserId: string | null = null;
-  let chargedProCredit = false;
+  let chargedAnalysisCredit = false;
 
   try {
     const user = await requireStudioUserFromAuthHeader(request);
@@ -161,17 +165,16 @@ export async function POST(request: Request) {
       productContext.additionalContext || (productContext.supplementalInputs ?? []).length > 0,
     );
     const useFreeSupplementalReanalyze = requestedSupplementalReanalyze && hasSupplementalInputs;
-    const shouldChargeProAnalysis =
-      resolvedAnalysisModel === "gemini-2.5-pro" && !useFreeSupplementalReanalyze;
+    const shouldChargeAnalysis = !useFreeSupplementalReanalyze;
 
     let analysisCreditUsed = 0;
 
-    if (shouldChargeProAnalysis) {
+    if (shouldChargeAnalysis) {
       const ensureRow = await supabase.from("user_model_credits").upsert(
         {
           user_id: user.id,
           image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-          balance: 0,
+          balance: SIGNUP_INITIAL_CREDITS,
         },
         {
           onConflict: "user_id,image_model_id",
@@ -201,31 +204,31 @@ export async function POST(request: Request) {
       }
 
       const currentBalance = Number(current.data.balance);
-      if (!Number.isFinite(currentBalance) || currentBalance < 1) {
+      if (!Number.isFinite(currentBalance) || currentBalance < ANALYSIS_CREDITS_REQUIRED) {
         await supabase.from("credit_ledger").insert({
           user_id: user.id,
           image_model_id: UNIFIED_CREDIT_BUCKET_ID,
           delta: 0,
           reason: "GENERATE",
           meta_json: {
-            source: "analysis_pro",
+            source: "analysis",
             status: "insufficient_credit",
-            required_credits: 1,
+            required_credits: ANALYSIS_CREDITS_REQUIRED,
             balance: Number.isFinite(currentBalance) ? currentBalance : 0,
           },
         });
 
         return NextResponse.json(
           {
-            error: `Pro 분석은 1크레딧이 필요합니다. 현재 잔액은 ${Number.isFinite(currentBalance) ? currentBalance : 0}크레딧입니다.`,
+            error: `레퍼런스 분석은 ${ANALYSIS_CREDITS_REQUIRED}크레딧이 필요합니다. 현재 잔액은 ${Number.isFinite(currentBalance) ? currentBalance : 0}크레딧입니다.`,
             balance: Number.isFinite(currentBalance) ? currentBalance : 0,
-            requiredCredits: 1,
+            requiredCredits: ANALYSIS_CREDITS_REQUIRED,
           },
           { status: 402 },
         );
       }
 
-      const nextBalance = currentBalance - 1;
+      const nextBalance = currentBalance - ANALYSIS_CREDITS_REQUIRED;
       const updated = await supabase
         .from("user_model_credits")
         .update({ balance: nextBalance })
@@ -236,28 +239,28 @@ export async function POST(request: Request) {
 
       if (updated.error || !updated.data) {
         return NextResponse.json(
-          { error: `Pro 분석 크레딧 차감에 실패했습니다. (${updated.error?.message})` },
+          { error: `분석 크레딧 차감에 실패했습니다. (${updated.error?.message})` },
           { status: 500 },
         );
       }
 
-      chargedProCredit = true;
-      analysisCreditUsed = 1;
+      chargedAnalysisCredit = true;
+      analysisCreditUsed = ANALYSIS_CREDITS_REQUIRED;
 
       const ledgerInsert = await supabase.from("credit_ledger").insert({
         user_id: user.id,
         image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-        delta: -1,
+        delta: -ANALYSIS_CREDITS_REQUIRED,
         reason: "GENERATE",
         meta_json: {
-          source: "analysis_pro",
-          credits_used: 1,
+          source: "analysis",
+          credits_used: ANALYSIS_CREDITS_REQUIRED,
           balance_after: Number(updated.data.balance),
         },
       });
 
       if (ledgerInsert.error) {
-        throw new Error(`Pro 분석 차감 원장 기록에 실패했습니다. (${ledgerInsert.error.message})`);
+        throw new Error(`분석 차감 원장 기록에 실패했습니다. (${ledgerInsert.error.message})`);
       }
     }
 
@@ -438,13 +441,13 @@ export async function POST(request: Request) {
       { status: 200 },
     );
   } catch (error) {
-    if (chargedProCredit && chargedUserId) {
+    if (chargedAnalysisCredit && chargedUserId) {
       try {
         await supabase.from("user_model_credits").upsert(
           {
             user_id: chargedUserId,
             image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-            balance: 0,
+            balance: SIGNUP_INITIAL_CREDITS,
           },
           {
             onConflict: "user_id,image_model_id",
@@ -463,18 +466,18 @@ export async function POST(request: Request) {
         if (Number.isFinite(currentBalance)) {
           await supabase
             .from("user_model_credits")
-            .update({ balance: currentBalance + 1 })
+            .update({ balance: currentBalance + ANALYSIS_CREDITS_REQUIRED })
             .eq("user_id", chargedUserId)
             .eq("image_model_id", UNIFIED_CREDIT_BUCKET_ID);
 
           await supabase.from("credit_ledger").insert({
             user_id: chargedUserId,
             image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-            delta: 1,
+            delta: ANALYSIS_CREDITS_REQUIRED,
             reason: "REFUND",
             meta_json: {
-              source: "analysis_pro",
-              refunded_credits: 1,
+              source: "analysis",
+              refunded_credits: ANALYSIS_CREDITS_REQUIRED,
               reason: "analysis_request_failed",
             },
           });

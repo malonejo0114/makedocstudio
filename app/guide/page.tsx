@@ -50,15 +50,16 @@ export default function GuidePage() {
       creditTitle: "모델/크레딧 정책 빠른 이해",
       creditCards: [
         { title: "크레딧 단위", body: "1크레딧 = 100원 기준으로 차감됩니다." },
-        { title: "판매가 반영", body: "모델별 판매가를 100원 단위로 반올림해 필요한 크레딧이 계산됩니다." },
+        { title: "분석 차감", body: "레퍼런스 분석 1회당 1크레딧이 차감됩니다." },
+        { title: "생성 차감", body: "이미지 생성 1장당 2크레딧이 차감됩니다." },
         { title: "생성 기록", body: "성공/실패 시도 모두 원장(ledger) 기록으로 남습니다." },
-        { title: "잔액 확인", body: "`/account`에서 잔액과 최근 30건 차감 내역을 확인할 수 있습니다." },
+        { title: "초기 보너스", body: "회원가입 시 기본 10크레딧이 지급됩니다." },
       ],
       troubleTitle: "자주 막히는 문제 해결",
       troubles: [
         {
           problem: "크레딧 부족 메시지가 뜹니다.",
-          solution: "`/account`에서 크레딧을 충전한 뒤 다시 생성하세요. 현재 정책은 1크레딧=100원입니다.",
+          solution: "`/account`에서 크레딧을 충전한 뒤 다시 시도하세요. 분석 1, 생성 2크레딧 정책입니다.",
         },
         {
           problem: "모델 에러/실패가 발생합니다.",
@@ -116,15 +117,16 @@ export default function GuidePage() {
       creditTitle: "Quick credit model overview",
       creditCards: [
         { title: "Credit unit", body: "1 credit = KRW 100." },
-        { title: "Sell price mapping", body: "Required credits are derived from sell price rounded to KRW 100 units." },
+        { title: "Analysis cost", body: "Each reference analysis costs 1 credit." },
+        { title: "Generation cost", body: "Each image generation costs 2 credits." },
         { title: "Generation ledger", body: "Both successful and failed attempts are logged in ledger." },
-        { title: "Balance check", body: "Check balance and latest deductions on `/account`." },
+        { title: "Signup bonus", body: "New users receive 10 credits on signup." },
       ],
       troubleTitle: "Troubleshooting",
       troubles: [
         {
           problem: "Insufficient credits",
-          solution: "Top up credits on `/account` and retry. Current policy is 1 credit = KRW 100.",
+          solution: "Top up credits on `/account` and retry. Current policy is 1 credit for analysis and 2 credits per generation.",
         },
         {
           problem: "Model generation errors",

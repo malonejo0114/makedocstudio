@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
+import { SIGNUP_INITIAL_CREDITS, UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 const DEFAULT_LIMIT = 20;
@@ -109,6 +109,25 @@ export async function GET(request: Request) {
     let balancesByUserId = new Map<string, number>();
 
     if (userIds.length > 0) {
+      const ensureRows = await supabase.from("user_model_credits").upsert(
+        userIds.map((userId) => ({
+          user_id: userId,
+          image_model_id: UNIFIED_CREDIT_BUCKET_ID,
+          balance: SIGNUP_INITIAL_CREDITS,
+        })),
+        {
+          onConflict: "user_id,image_model_id",
+          ignoreDuplicates: true,
+        },
+      );
+
+      if (ensureRows.error) {
+        return NextResponse.json(
+          { error: `유저 크레딧 행 초기화 실패 (${ensureRows.error.message})` },
+          { status: 500 },
+        );
+      }
+
       const creditsRes = await supabase
         .from("user_model_credits")
         .select("user_id, balance")
@@ -141,4 +160,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

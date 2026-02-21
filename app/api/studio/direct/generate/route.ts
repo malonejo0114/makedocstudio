@@ -12,9 +12,15 @@ import {
 import { buildStudioDirectImagePrompt } from "@/lib/studio/promptBuilders.server";
 import {
   CREDIT_WON_UNIT,
+  IMAGE_GENERATION_CREDITS_REQUIRED,
   getModelPriceById,
+  SIGNUP_INITIAL_CREDITS,
   UNIFIED_CREDIT_BUCKET_ID,
 } from "@/lib/studio/pricing";
+import {
+  getRuntimeModelTierSettings,
+  resolveModelSelectionByTier,
+} from "@/lib/studio/modelTiers";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 const ExtraTextSchema = z.object({
@@ -192,20 +198,28 @@ export async function POST(request: Request) {
     const referenceImageUrl = normalizedReferenceImageUrls[0] || "";
     const productImageUrl = body.productImageUrl?.trim() || "";
     const projectReferenceUrl = referenceImageUrl || productImageUrl || "about:blank";
-
-    const priced = getModelPriceById(body.imageModelId, "1K");
-    if (!priced) {
+    const supabase = getSupabaseServiceClient();
+    const modelTierSettings = await getRuntimeModelTierSettings();
+    const modelSelection = resolveModelSelectionByTier(body.imageModelId, modelTierSettings);
+    if (!modelSelection) {
       return NextResponse.json({ error: "지원하지 않는 생성 모델입니다." }, { status: 400 });
     }
 
-    const supabase = getSupabaseServiceClient();
-    const creditsToConsume = Math.max(1, priced.creditsRequired);
+    const priced = getModelPriceById(modelSelection.resolvedModelId, "1K");
+    if (!priced) {
+      return NextResponse.json(
+        { error: `모델 가격표 조회 실패 (${modelSelection.resolvedModelId})` },
+        { status: 400 },
+      );
+    }
+
+    const creditsToConsume = IMAGE_GENERATION_CREDITS_REQUIRED;
 
     const ensureRow = await supabase.from("user_model_credits").upsert(
       {
         user_id: user.id,
         image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-        balance: 0,
+        balance: SIGNUP_INITIAL_CREDITS,
       },
       {
         onConflict: "user_id,image_model_id",
@@ -245,6 +259,8 @@ export async function POST(request: Request) {
           status: "insufficient",
           source: "direct-generate",
           requested_model: body.imageModelId,
+          resolved_model: modelSelection.resolvedModelId,
+          requested_tier: modelSelection.tierId,
           required_credits: creditsToConsume,
         },
       });
@@ -287,6 +303,8 @@ export async function POST(request: Request) {
       meta_json: {
         source: "direct-generate",
         requested_model: body.imageModelId,
+        resolved_model: modelSelection.resolvedModelId,
+        requested_tier: modelSelection.tierId,
         unit_krw: CREDIT_WON_UNIT,
         credits_used: creditsToConsume,
       },
@@ -404,7 +422,7 @@ export async function POST(request: Request) {
       (item): item is InlineData => Boolean(item),
     );
 
-    const runtimeCandidates = resolveRuntimeModelCandidates(body.imageModelId);
+    const runtimeCandidates = resolveRuntimeModelCandidates(modelSelection.resolvedModelId);
     let generated: Awaited<ReturnType<typeof generateImageWithGeminiAdvanced>> | null = null;
     let lastModelError: Error | null = null;
 
@@ -464,7 +482,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         project_id: projectInsert.data.id,
         prompt_id: promptInsert.data.id,
-        image_model_id: body.imageModelId,
+        image_model_id: modelSelection.resolvedModelId,
         image_url: imageUrl,
         aspect_ratio: body.aspectRatio,
         cost_usd: priced.costUsd,
@@ -493,7 +511,7 @@ export async function POST(request: Request) {
           id: generationInsert.data.id,
           projectId: generationInsert.data.project_id,
           promptId: generationInsert.data.prompt_id,
-          imageModelId: generationInsert.data.image_model_id,
+          imageModelId: modelSelection.tierName ?? generationInsert.data.image_model_id,
           imageUrl: generationInsert.data.image_url,
           aspectRatio: generationInsert.data.aspect_ratio,
           textFidelityScore: generationInsert.data.text_fidelity_score,
@@ -513,7 +531,7 @@ export async function POST(request: Request) {
           {
             user_id: userId,
             image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-            balance: 0,
+            balance: SIGNUP_INITIAL_CREDITS,
           },
           {
             onConflict: "user_id,image_model_id",

@@ -7,6 +7,9 @@ import {
 const DEFAULT_RATE = 1442;
 export const CREDIT_WON_UNIT = 100;
 export const UNIFIED_CREDIT_BUCKET_ID = "KRW_100_CREDIT";
+export const SIGNUP_INITIAL_CREDITS = 10;
+export const ANALYSIS_CREDITS_REQUIRED = 1;
+export const IMAGE_GENERATION_CREDITS_REQUIRED = 2;
 
 export type PricedModelCatalogItem = ReturnType<typeof getPricedModelCatalog>[number];
 export type PublicPricedModelCatalogItem = {
@@ -40,7 +43,7 @@ export function toModelPrice(model: StudioImageModel, imageSize?: "1K" | "2K" | 
   const costUsd = imageSize === "4K" && model.costUsd4k ? model.costUsd4k : model.costUsd;
   const costKrw = Math.ceil(costUsd * rate);
   const sellKrw = roundTo100(costKrw * 3);
-  const creditsRequired = Math.max(1, Math.round(sellKrw / CREDIT_WON_UNIT));
+  const creditsRequired = IMAGE_GENERATION_CREDITS_REQUIRED;
 
   return {
     costUsd,

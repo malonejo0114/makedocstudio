@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { STUDIO_IMAGE_MODELS } from "@/config/modelCatalog";
+import { getStudioImageModel } from "@/config/modelCatalog";
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
+import { getRuntimeModelTierSettings } from "@/lib/studio/modelTiers";
 import {
-  getPublicPricedModelCatalog,
+  IMAGE_GENERATION_CREDITS_REQUIRED,
+  getModelPriceById,
+  SIGNUP_INITIAL_CREDITS,
   UNIFIED_CREDIT_BUCKET_ID,
 } from "@/lib/studio/pricing";
 import { getSupabaseServiceClient } from "@/lib/supabase";
@@ -12,6 +15,25 @@ export async function GET(request: Request) {
   try {
     const user = await requireStudioUserFromAuthHeader(request);
     const supabase = getSupabaseServiceClient();
+
+    const ensureSignupCredits = await supabase.from("user_model_credits").upsert(
+      {
+        user_id: user.id,
+        image_model_id: UNIFIED_CREDIT_BUCKET_ID,
+        balance: SIGNUP_INITIAL_CREDITS,
+      },
+      {
+        onConflict: "user_id,image_model_id",
+        ignoreDuplicates: true,
+      },
+    );
+
+    if (ensureSignupCredits.error) {
+      return NextResponse.json(
+        { error: `기본 크레딧 초기화에 실패했습니다. (${ensureSignupCredits.error.message})` },
+        { status: 500 },
+      );
+    }
 
     const [creditsRes, ledgerRes] = await Promise.all([
       supabase
@@ -51,18 +73,32 @@ export async function GET(request: Request) {
       );
     }
 
+    const tierSettings = await getRuntimeModelTierSettings();
     const globalBalance = creditsRes.data?.balance ?? 0;
+    const pricedModels = tierSettings.map((tier) => {
+      const model = getStudioImageModel(tier.imageModelId);
+      const priced = getModelPriceById(tier.imageModelId, "1K");
 
-    const pricedModels = getPublicPricedModelCatalog().map((model) => ({
-      ...model,
-      balance: globalBalance,
-    }));
+      return {
+        id: tier.tierId,
+        provider: model?.provider ?? "Imagen 4",
+        name: tier.displayName,
+        textSuccess: model?.textSuccess ?? "중",
+        speed: model?.speed ?? "보통",
+        mappedImageModelId: tier.imageModelId,
+        price: {
+          creditsRequired: priced?.creditsRequired ?? IMAGE_GENERATION_CREDITS_REQUIRED,
+        },
+        highRes: null,
+        balance: globalBalance,
+      };
+    });
 
     return NextResponse.json(
       {
         models: pricedModels,
         globalBalance,
-        supportedModelIds: STUDIO_IMAGE_MODELS.map((item) => item.id),
+        supportedModelIds: tierSettings.map((item) => item.tierId),
         ledger: ledgerRes.data ?? [],
       },
       { status: 200 },

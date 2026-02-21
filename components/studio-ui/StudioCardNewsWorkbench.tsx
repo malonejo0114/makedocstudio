@@ -64,6 +64,7 @@ type CardNewsPlanResponse = {
     designCue: string;
   }>;
   warnings: string[];
+  analysisCreditUsed?: number;
 };
 
 type DirectGenerateResponse = {
@@ -264,7 +265,11 @@ export default function StudioCardNewsWorkbench() {
       setSlides(normalizedSlides);
       setSelectedSlideId(normalizedSlides[0]?.id ?? null);
       setPlanWarnings(payload.warnings ?? []);
-      setMessage(`카드뉴스 ${normalizedSlides.length}장 기획이 생성되었습니다.`);
+      setMessage(
+        (payload.analysisCreditUsed ?? 0) > 0
+          ? `카드뉴스 ${normalizedSlides.length}장 기획이 생성되었습니다. 분석 ${payload.analysisCreditUsed}크레딧 차감`
+          : `카드뉴스 ${normalizedSlides.length}장 기획이 생성되었습니다.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "카드뉴스 기획 생성에 실패했습니다.");
     } finally {

@@ -11,7 +11,7 @@ export default function FaqPage() {
       faqs: [
         {
           q: "이미지 1장 생성 시 크레딧은 어떻게 차감되나요?",
-          a: "통합 크레딧에서 차감됩니다. 1크레딧=100원이며, 모델별 판매가를 100원 단위로 반올림한 뒤 그 금액만큼 크레딧이 차감됩니다.",
+          a: "통합 크레딧에서 이미지 1장당 2크레딧이 차감됩니다. 레퍼런스 분석은 1크레딧이 차감됩니다.",
         },
         {
           q: "생성 실패 시에도 기록이 남나요?",
@@ -32,7 +32,7 @@ export default function FaqPage() {
       faqs: [
         {
           q: "How are credits deducted per generated image?",
-          a: "Credits are deducted from unified balance. 1 credit = KRW 100. Model sell prices are rounded to KRW 100 units and converted to required credits.",
+          a: "Unified credits are used. Each image generation costs 2 credits, and each reference analysis costs 1 credit.",
         },
         {
           q: "Do failed generations leave records?",

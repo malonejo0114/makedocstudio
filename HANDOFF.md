@@ -30,11 +30,14 @@ npm run dev
 - Buttons: `다시 분석하기` / `그냥 진행하기`
 - Reanalyze sends extra context to API
 
-3. Pro analysis credit policy:
-- `gemini-2.5-pro` analysis = 1 credit charged
+3. Analysis credit policy:
+- reference analysis = 1 credit charged
+- card-news planning analysis = 1 credit charged
 - If user clicks supplemental reanalyze with filled supplementation: free
 - On supplemental reanalyze response: missing-input warnings suppressed
-- File: `app/api/studio/reference/analyze/route.ts`
+- Files:
+  - `app/api/studio/reference/analyze/route.ts`
+  - `app/api/studio/cardnews/plan/route.ts`
 
 4. Prompt warnings UX:
 - Warnings moved to selected role prompt card area
@@ -46,6 +49,22 @@ npm run dev
 - APIs:
   - `/api/admin/prompts`
   - `/api/admin/prompt-lab`
+
+6. Admin model tier manager:
+- User-facing model labels are fixed to 3 tiers: `기본`, `상위버전`, `최상위버전`
+- Actual runtime AI model mapping is configurable in admin
+- APIs/files:
+  - `/api/admin/model-tiers`
+  - `components/studio-ui/AdminModelTierManager.tsx`
+  - `lib/studio/modelTiers.ts`
+
+7. Admin SEO manager:
+- Meta title/description/robots/canonical/OG, search console verification,
+  extra meta tags, head/body script injection managed in admin
+- APIs/files:
+  - `/api/admin/seo-settings`
+  - `components/studio-ui/AdminSeoManager.tsx`
+  - `lib/seo/settings.ts`
 
 ## Prompt SOT
 - `/prompts` directory is source of truth
@@ -59,8 +78,19 @@ npm run dev
 ## Current business rules
 - Image generation uses unified KRW credit bucket (`KRW_100_CREDIT`)
 - 1 credit = 100 KRW
-- Image credits consumed by model price policy
-- Pro analysis additionally consumes 1 credit (except supplemental free rerun)
+- Signup initial credits = 10
+- Reference analysis = 1 credit
+- Card-news planning analysis = 1 credit
+- Image generation (all models) = 2 credits
+- Public model UI exposes only 3 tiers; real model ids are admin-mapped
+
+## Required migration (latest)
+- Apply:
+  - `supabase/migrations/20260222_000014_model_tiers_and_signup_credits.sql`
+- This migration adds:
+  - `studio_model_tier_settings` table
+  - default tier seed rows
+  - `auth.users` trigger granting signup 10 credits + ledger row
 
 ## Suggested next tasks
 1. Card-news generator module (4~8 slides, template-based)

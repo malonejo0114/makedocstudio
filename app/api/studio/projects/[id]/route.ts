@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
+import { getRuntimeModelTierSettings } from "@/lib/studio/modelTiers";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 const ProjectPatchSchema = z.object({
@@ -16,6 +17,10 @@ type RouteContext = {
 
 async function loadProjectBundle(userId: string, projectId: string) {
   const supabase = getSupabaseServiceClient();
+  const tierSettings = await getRuntimeModelTierSettings();
+  const displayModelById = new Map(
+    tierSettings.map((item) => [item.imageModelId, item.displayName]),
+  );
 
   const project = await supabase
     .from("studio_projects")
@@ -90,7 +95,7 @@ async function loadProjectBundle(userId: string, projectId: string) {
       generations: (generationsRes.data ?? []).map((row) => ({
         id: row.id,
         promptId: row.prompt_id,
-        imageModelId: row.image_model_id,
+        imageModelId: displayModelById.get(row.image_model_id) ?? row.image_model_id,
         imageUrl: row.image_url,
         aspectRatio: row.aspect_ratio,
         textFidelityScore: row.text_fidelity_score,

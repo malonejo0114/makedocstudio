@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { getRuntimeModelTierSettings, mapStoredModelIdToTier } from "@/lib/studio/modelTiers";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 export async function GET() {
   try {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const supabase = getSupabaseServiceClient();
+    const tierSettings = await getRuntimeModelTierSettings();
 
     const rows = await supabase
       .from("studio_generations")
@@ -26,8 +28,11 @@ export async function GET() {
       const score = Number(row.text_fidelity_score);
       if (!Number.isFinite(score)) continue;
 
-      const current = statsMap.get(row.image_model_id) ?? { sum: 0, count: 0 };
-      statsMap.set(row.image_model_id, {
+      const tierId = mapStoredModelIdToTier(String(row.image_model_id || ""), tierSettings);
+      if (!tierId) continue;
+
+      const current = statsMap.get(tierId) ?? { sum: 0, count: 0 };
+      statsMap.set(tierId, {
         sum: current.sum + score,
         count: current.count + 1,
       });

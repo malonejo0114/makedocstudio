@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import AdminPromptLab from "@/components/studio-ui/AdminPromptLab";
 import AdminPricingManager from "@/components/studio-ui/AdminPricingManager";
+import AdminModelTierManager from "@/components/studio-ui/AdminModelTierManager";
 import AdminSeoManager from "@/components/studio-ui/AdminSeoManager";
 import AdminTemplatesManager from "@/components/studio-ui/AdminTemplatesManager";
 import AdminUserCreditsManager from "@/components/studio-ui/AdminUserCreditsManager";
@@ -47,6 +48,7 @@ export default function AdminPage() {
       </section>
 
       <AdminPricingManager />
+      <AdminModelTierManager />
       <AdminUserCreditsManager />
       <AdminSeoManager />
       <AdminPromptLab />

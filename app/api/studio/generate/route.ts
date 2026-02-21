@@ -6,10 +6,16 @@ import { z } from "zod";
 
 import {
   CREDIT_WON_UNIT,
+  IMAGE_GENERATION_CREDITS_REQUIRED,
   getModelPriceById,
+  SIGNUP_INITIAL_CREDITS,
   UNIFIED_CREDIT_BUCKET_ID,
 } from "@/lib/studio/pricing";
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
+import {
+  getRuntimeModelTierSettings,
+  resolveModelSelectionByTier,
+} from "@/lib/studio/modelTiers";
 import { estimateTextFidelityScore } from "@/lib/studio/gemini.server";
 import { buildStudioImagePrompt } from "@/lib/studio/promptBuilders.server";
 import type {
@@ -524,13 +530,21 @@ export async function POST(request: Request) {
     const body = parsed.data;
     const styleTransferMode = body.styleTransferMode ?? "style_transfer";
     const textAccuracyMode = body.textAccuracyMode ?? "normal";
-    const priced = getModelPriceById(body.imageModelId, "1K");
+    const supabase = getSupabaseServiceClient();
+    const modelTierSettings = await getRuntimeModelTierSettings();
+    const modelSelection = resolveModelSelectionByTier(body.imageModelId, modelTierSettings);
 
-    if (!priced) {
+    if (!modelSelection) {
       return NextResponse.json({ error: "지원하지 않는 생성 모델입니다." }, { status: 400 });
     }
 
-    const supabase = getSupabaseServiceClient();
+    const priced = getModelPriceById(modelSelection.resolvedModelId, "1K");
+    if (!priced) {
+      return NextResponse.json(
+        { error: `모델 가격표 조회 실패 (${modelSelection.resolvedModelId})` },
+        { status: 400 },
+      );
+    }
 
     const [projectRes, promptRes, analysisRes] = await Promise.all([
       supabase
@@ -578,13 +592,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const creditsToConsume = Math.max(1, priced.creditsRequired);
+    const creditsToConsume = IMAGE_GENERATION_CREDITS_REQUIRED;
 
     const ensureRow = await supabase.from("user_model_credits").upsert(
       {
         user_id: user.id,
         image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-        balance: 0,
+        balance: SIGNUP_INITIAL_CREDITS,
       },
       {
         onConflict: "user_id,image_model_id",
@@ -625,6 +639,8 @@ export async function POST(request: Request) {
           status: "insufficient",
           source: "consume-unified",
           requested_model: body.imageModelId,
+          resolved_model: modelSelection.resolvedModelId,
+          requested_tier: modelSelection.tierId,
           required_credits: creditsToConsume,
         },
       });
@@ -665,6 +681,8 @@ export async function POST(request: Request) {
       meta_json: {
         source: "consume-unified",
         requested_model: body.imageModelId,
+        resolved_model: modelSelection.resolvedModelId,
+        requested_tier: modelSelection.tierId,
         unit_krw: CREDIT_WON_UNIT,
         credits_used: creditsToConsume,
       },
@@ -744,7 +762,7 @@ export async function POST(request: Request) {
       promptDraft.copy.badges.some((item) => item.trim().length > 0);
     const shouldStrictRetry =
       textAccuracyMode === "strict" && body.textMode === "in_image" && hasTextTargets;
-    const runtimeCandidates = resolveRuntimeModelCandidates(body.imageModelId, {
+    const runtimeCandidates = resolveRuntimeModelCandidates(modelSelection.resolvedModelId, {
       preferQuality: shouldStrictRetry,
     });
     const maxAttempts = shouldStrictRetry ? 3 : 1;
@@ -856,7 +874,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         project_id: body.projectId,
         prompt_id: body.promptId,
-        image_model_id: body.imageModelId,
+        image_model_id: modelSelection.resolvedModelId,
         image_url: imageUrl,
         aspect_ratio: body.aspectRatio,
         cost_usd: priced.costUsd,
@@ -883,7 +901,7 @@ export async function POST(request: Request) {
           id: insertRes.data.id,
           projectId: insertRes.data.project_id,
           promptId: insertRes.data.prompt_id,
-          imageModelId: insertRes.data.image_model_id,
+          imageModelId: modelSelection.tierName ?? insertRes.data.image_model_id,
           imageUrl: insertRes.data.image_url,
           aspectRatio: insertRes.data.aspect_ratio,
           textFidelityScore: insertRes.data.text_fidelity_score,
@@ -903,7 +921,7 @@ export async function POST(request: Request) {
           {
             user_id: userId,
             image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-            balance: 0,
+            balance: SIGNUP_INITIAL_CREDITS,
           },
           {
             onConflict: "user_id,image_model_id",

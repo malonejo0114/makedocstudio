@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
-import { UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
+import { SIGNUP_INITIAL_CREDITS, UNIFIED_CREDIT_BUCKET_ID } from "@/lib/studio/pricing";
 import { getSupabaseServiceClient } from "@/lib/supabase";
 
 const TopupSchema = z.object({
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       {
         user_id: user.id,
         image_model_id: UNIFIED_CREDIT_BUCKET_ID,
-        balance: 0,
+        balance: SIGNUP_INITIAL_CREDITS,
       },
       {
         onConflict: "user_id,image_model_id",
