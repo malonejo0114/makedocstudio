@@ -80,7 +80,7 @@ export default function SiteHeader({
           {showStudioCta ? (
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
               <Link
-                href="/studio-entry"
+                href="/studio"
                 className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-[#D6FF4F] px-4 py-2 text-sm font-semibold text-[#0B0B0C]"
               >
                 {t.openStudio}

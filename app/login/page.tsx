@@ -17,7 +17,7 @@ function readParam(
 }
 
 export default function LoginPage({ searchParams }: PageProps) {
-  const nextPath = readParam(searchParams, "next") || "/studio-entry";
+  const nextPath = readParam(searchParams, "next") || "/studio";
 
   return (
     <div>

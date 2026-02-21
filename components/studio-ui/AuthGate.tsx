@@ -77,7 +77,7 @@ export default function AuthGate({ children }: AuthGateProps) {
             {t.desc}
           </p>
           <Link
-            href="/login?next=/studio-entry"
+            href="/login?next=/studio"
             className="mt-6 inline-flex rounded-full bg-[#0B0B0C] px-6 py-3 text-sm font-semibold text-[#D6FF4F]"
           >
             {t.goLogin}

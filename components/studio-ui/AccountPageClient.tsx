@@ -246,7 +246,7 @@ export default function AccountPageClient() {
         <p className="mt-4 text-sm font-semibold text-black/80">총 보유 크레딧: {totalCredits} credits</p>
         <div className="mt-3">
           <Link
-            href="/studio-entry?reset=1"
+            href="/studio?reset=1"
             className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70"
           >
             스튜디오 버전 다시 선택

@@ -230,7 +230,7 @@ export default function LandingPage() {
 
       const signIn = await supabase.auth.signInWithPassword({ email, password });
       if (signIn.error) throw signIn.error;
-      router.push("/studio-entry");
+      router.push("/studio");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.authFailed);
@@ -254,7 +254,7 @@ export default function LandingPage() {
     try {
       const supabase = getSupabaseBrowserClient();
       const redirectTo =
-        typeof window === "undefined" ? undefined : `${window.location.origin}/studio-entry`;
+        typeof window === "undefined" ? undefined : `${window.location.origin}/studio`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -304,7 +304,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-7 flex flex-wrap gap-2.5">
               <Link
-                href="/studio-entry"
+                href="/studio"
                 className="inline-flex items-center gap-2 rounded-full bg-[#D6FF4F] px-5 py-3 text-sm font-semibold text-[#0B0B0C] transition hover:-translate-y-0.5"
               >
                 {t.startStudio}
@@ -377,7 +377,7 @@ export default function LandingPage() {
                   <p className="text-xs text-black/55">{t.alreadySignedIn}</p>
                   <div className="flex gap-2">
                     <Link
-                      href="/studio-entry"
+                      href="/studio"
                       className="inline-flex items-center gap-1 rounded-full bg-[#0B0B0C] px-3 py-1.5 text-xs font-semibold text-[#D6FF4F]"
                     >
                       {t.openStudio}
@@ -483,7 +483,7 @@ export default function LandingPage() {
           </h2>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
-              href="/studio-entry"
+              href="/studio"
               className="inline-flex items-center gap-2 rounded-full bg-[#D6FF4F] px-5 py-2.5 text-sm font-semibold text-[#0B0B0C]"
             >
               {t.openStudio}

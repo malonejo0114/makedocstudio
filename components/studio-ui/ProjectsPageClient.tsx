@@ -57,7 +57,7 @@ export default function ProjectsPageClient() {
         <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-8 text-sm text-rose-700">{error}</div>
       ) : projects.length === 0 ? (
         <div className="rounded-[28px] border border-black/10 bg-white p-8 text-sm text-black/55">
-          저장된 프로젝트가 없습니다. <Link href="/studio-entry" className="font-semibold underline">스튜디오에서 생성 시작</Link>
+          저장된 프로젝트가 없습니다. <Link href="/studio" className="font-semibold underline">스튜디오에서 생성 시작</Link>
         </div>
       ) : (
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -34,13 +34,13 @@ export async function middleware(request: NextRequest) {
 
   if (isBlockedLegacyPath(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/studio-entry";
+    url.pathname = "/studio";
     return NextResponse.redirect(url);
   }
 
   if (isLegacyAliasPath(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = pathname === "/history" ? "/projects" : "/studio-entry";
+    url.pathname = pathname === "/history" ? "/projects" : "/studio";
     return NextResponse.redirect(url);
   }
 

@@ -152,7 +152,7 @@ export default function GuidePage() {
           <p className="mt-4 max-w-3xl text-sm text-white/75 md:text-base">{t.subtitle}</p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
-              href="/studio-entry"
+              href="/studio"
               className="inline-flex items-center gap-2 rounded-full bg-[#D6FF4F] px-5 py-2.5 text-sm font-semibold text-[#0B0B0C]"
             >
               {t.startNow}

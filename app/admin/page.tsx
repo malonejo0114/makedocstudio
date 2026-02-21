@@ -26,7 +26,7 @@ export default function AdminPage() {
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/studio-entry" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/75">
+          <Link href="/studio" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/75">
             스튜디오
           </Link>
           <Link href="/templates" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/75">

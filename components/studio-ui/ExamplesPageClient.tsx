@@ -96,7 +96,7 @@ export default function ExamplesPageClient() {
 
       <div>
         <Link
-          href="/studio-entry"
+          href="/studio"
           className="inline-flex rounded-full bg-[#0B0B0C] px-5 py-2.5 text-sm font-semibold text-[#D6FF4F]"
         >
           {t.startCta}

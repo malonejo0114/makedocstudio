@@ -17,7 +17,7 @@ export default function AppHeader() {
     ko: {
       brand: "MakeDoc Studio",
       links: [
-        { href: "/studio-entry", label: "스튜디오" },
+        { href: "/studio", label: "스튜디오" },
         { href: "/projects", label: "프로젝트" },
         { href: "/account", label: "계정" },
         { href: "/guide", label: "가이드" },
@@ -28,7 +28,7 @@ export default function AppHeader() {
     en: {
       brand: "MakeDoc Studio",
       links: [
-        { href: "/studio-entry", label: "Studio" },
+        { href: "/studio", label: "Studio" },
         { href: "/projects", label: "Projects" },
         { href: "/account", label: "Account" },
         { href: "/guide", label: "Guide" },
