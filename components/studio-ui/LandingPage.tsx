@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 
 import { useLocaleText } from "@/components/studio-ui/LanguageProvider";
 import type { Locale } from "@/lib/i18n/config";
-import { getPricedModelCatalog } from "@/lib/studio/pricing";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type AuthMode = "signin" | "signup";
@@ -164,7 +163,6 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 export default function LandingPage() {
   const router = useRouter();
-  const pricedModels = getPricedModelCatalog();
   const t = useLocaleText(LANDING_MESSAGES);
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
@@ -174,11 +172,6 @@ export default function LandingPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  const lowestSellKrw = useMemo(() => {
-    const values = pricedModels.map((model) => model.price.sellKrw);
-    return Math.min(...values);
-  }, [pricedModels]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -318,7 +311,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="mt-8 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70">
-              {t.pricingHintPrefix} ₩{lowestSellKrw.toLocaleString()} / {t.pricingHintSuffix}
+              {t.pricingHintPrefix} ₩100 / {t.pricingHintSuffix}
             </div>
           </div>
         </Reveal>

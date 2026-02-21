@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { STUDIO_IMAGE_MODELS } from "@/config/modelCatalog";
 import { requireStudioUserFromAuthHeader } from "@/lib/studio/auth.server";
 import {
-  getPricedModelCatalog,
+  getPublicPricedModelCatalog,
   UNIFIED_CREDIT_BUCKET_ID,
 } from "@/lib/studio/pricing";
 import { getSupabaseServiceClient } from "@/lib/supabase";
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
     const globalBalance = creditsRes.data?.balance ?? 0;
 
-    const pricedModels = getPricedModelCatalog().map((model) => ({
+    const pricedModels = getPublicPricedModelCatalog().map((model) => ({
       ...model,
       balance: globalBalance,
     }));

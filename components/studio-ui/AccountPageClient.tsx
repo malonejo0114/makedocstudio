@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { authFetchJson, formatDateTime, formatKrw } from "@/lib/studio/client";
+import { authFetchJson, formatDateTime } from "@/lib/studio/client";
 
 type CreditModel = {
   id: string;
@@ -14,8 +13,6 @@ type CreditModel = {
   textSuccess: string;
   speed: string;
   price: {
-    costKrw: number;
-    sellKrw: number;
     creditsRequired: number;
   };
   balance: number;
@@ -244,14 +241,6 @@ export default function AccountPageClient() {
         <h1 className="mt-2 text-4xl font-semibold text-[#0B0B0C]">크레딧 / 프로필</h1>
         <p className="mt-2 text-sm text-black/65">통합 크레딧 정책: 1크레딧 = 100원</p>
         <p className="mt-4 text-sm font-semibold text-black/80">총 보유 크레딧: {totalCredits} credits</p>
-        <div className="mt-3">
-          <Link
-            href="/studio?reset=1"
-            className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70"
-          >
-            스튜디오 버전 다시 선택
-          </Link>
-        </div>
         {isDevMode && (
           <div className="mt-4 flex gap-2">
             <button
@@ -413,9 +402,6 @@ export default function AccountPageClient() {
             <p className="text-xs uppercase tracking-[0.18em] text-black/45">{model.provider}</p>
             <h2 className="mt-1 text-lg font-semibold text-[#0B0B0C]">{model.name}</h2>
             <p className="mt-2 text-sm text-black/70">현재 통합 잔액: {totalCredits} credits</p>
-            <p className="mt-1 text-xs text-black/55">
-              원가 ₩{formatKrw(model.price.costKrw)} / 판매가 ₩{formatKrw(model.price.sellKrw)}
-            </p>
             <p className="mt-1 text-xs text-black/55">1장 생성 차감: {model.price.creditsRequired} credits</p>
           </article>
         ))}

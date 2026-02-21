@@ -4,11 +4,9 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 
 import Link from "next/link";
 
-import { getPricedModelCatalog } from "@/lib/studio/pricing";
 import {
   authFetchJson,
   formatDateTime,
-  formatKrw,
   getAccessToken,
 } from "@/lib/studio/client";
 
@@ -18,7 +16,7 @@ type CreditModel = {
   name: string;
   textSuccess: "상" | "중상" | "중";
   speed: "빠름" | "보통" | "느림";
-  price: { costUsd: number; costKrw: number; sellKrw: number; creditsRequired: number };
+  price: { creditsRequired: number };
   balance: number;
 };
 
@@ -66,7 +64,6 @@ type DirectGenerateResponse = {
     imageUrl: string;
     imageModelId: string;
     textFidelityScore: number | null;
-    sellKrw: number;
     createdAt: string;
   };
   creditsUsed: number;
@@ -335,10 +332,7 @@ async function loadImageElement(src: string): Promise<HTMLImageElement> {
 }
 
 export default function StudioDirectWorkbench() {
-  const fallbackModels = getPricedModelCatalog().map((model) => ({
-    ...model,
-    balance: 0,
-  }));
+  const fallbackModels: CreditModel[] = [];
 
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [productFile, setProductFile] = useState<File | null>(null);
@@ -869,8 +863,7 @@ export default function StudioDirectWorkbench() {
               >
                 {models.map((model) => (
                   <option key={model.id} value={model.id}>
-                    {model.name} | 잔액 {model.balance} | 판매가 ₩{formatKrw(model.price.sellKrw)} | 차감{" "}
-                    {model.price.creditsRequired}cr
+                    {model.name} | 잔액 {model.balance} | 차감 {model.price.creditsRequired}cr
                   </option>
                 ))}
               </select>
@@ -1174,7 +1167,6 @@ export default function StudioDirectWorkbench() {
             <div className="mt-3 rounded-2xl border border-black/10 bg-black/[0.02] p-3 text-xs text-black/65">
               <p>생성 시각: {formatDateTime(result.createdAt)}</p>
               <p className="mt-1">모델: {result.imageModelId}</p>
-              <p className="mt-1">판매가 기준: ₩{formatKrw(result.sellKrw)}</p>
               {result.textFidelityScore !== null && (
                 <p className="mt-1">텍스트 일치도: {result.textFidelityScore}점</p>
               )}

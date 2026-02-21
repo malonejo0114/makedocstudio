@@ -8,6 +8,21 @@ const DEFAULT_RATE = 1442;
 export const CREDIT_WON_UNIT = 100;
 export const UNIFIED_CREDIT_BUCKET_ID = "KRW_100_CREDIT";
 
+export type PricedModelCatalogItem = ReturnType<typeof getPricedModelCatalog>[number];
+export type PublicPricedModelCatalogItem = {
+  id: string;
+  provider: PricedModelCatalogItem["provider"];
+  name: string;
+  textSuccess: PricedModelCatalogItem["textSuccess"];
+  speed: PricedModelCatalogItem["speed"];
+  price: {
+    creditsRequired: number;
+  };
+  highRes: {
+    creditsRequired: number;
+  } | null;
+};
+
 export function getUsdKrwRate(): number {
   const parsed = Number.parseFloat(process.env.USD_KRW_RATE || "");
   if (Number.isFinite(parsed) && parsed > 0) {
@@ -59,4 +74,22 @@ export function getPricedModelCatalog() {
       highRes,
     };
   });
+}
+
+export function getPublicPricedModelCatalog(): PublicPricedModelCatalogItem[] {
+  return getPricedModelCatalog().map((model) => ({
+    id: model.id,
+    provider: model.provider,
+    name: model.name,
+    textSuccess: model.textSuccess,
+    speed: model.speed,
+    price: {
+      creditsRequired: model.price.creditsRequired,
+    },
+    highRes: model.highRes
+      ? {
+          creditsRequired: model.highRes.creditsRequired,
+        }
+      : null,
+  }));
 }

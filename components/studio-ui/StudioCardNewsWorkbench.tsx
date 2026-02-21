@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { getPricedModelCatalog } from "@/lib/studio/pricing";
-import { authFetchJson, formatDateTime, formatKrw } from "@/lib/studio/client";
+import { authFetchJson, formatDateTime } from "@/lib/studio/client";
 
 type CreditModel = {
   id: string;
@@ -13,7 +12,7 @@ type CreditModel = {
   name: string;
   textSuccess: "상" | "중상" | "중";
   speed: "빠름" | "보통" | "느림";
-  price: { costUsd: number; costKrw: number; sellKrw: number; creditsRequired: number };
+  price: { creditsRequired: number };
   balance: number;
 };
 
@@ -43,7 +42,6 @@ type PlanSlide = {
     imageUrl: string;
     imageModelId: string;
     textFidelityScore: number | null;
-    sellKrw: number;
     createdAt: string;
   };
   projectId?: string;
@@ -76,7 +74,6 @@ type DirectGenerateResponse = {
     imageUrl: string;
     imageModelId: string;
     textFidelityScore: number | null;
-    sellKrw: number;
     createdAt: string;
   };
   creditsUsed: number;
@@ -97,7 +94,7 @@ function inferTextMode(slide: PlanSlide): "in_image" | "no_text" {
 }
 
 export default function StudioCardNewsWorkbench() {
-  const fallbackModels = getPricedModelCatalog().map((model) => ({ ...model, balance: 0 }));
+  const fallbackModels: CreditModel[] = [];
   const [models, setModels] = useState<CreditModel[]>(fallbackModels);
   const [selectedModelId, setSelectedModelId] = useState<string>(fallbackModels[0]?.id || "");
 
@@ -546,7 +543,7 @@ export default function StudioCardNewsWorkbench() {
               >
                 {models.map((model) => (
                   <option key={model.id} value={model.id}>
-                    {model.name} | 잔액 {model.balance} | 판매가 ₩{formatKrw(model.price.sellKrw)} | 차감 {model.price.creditsRequired}cr
+                    {model.name} | 잔액 {model.balance} | 차감 {model.price.creditsRequired}cr
                   </option>
                 ))}
               </select>
@@ -790,7 +787,6 @@ export default function StudioCardNewsWorkbench() {
               <div className="rounded-xl border border-black/10 bg-black/[0.02] p-3 text-xs text-black/65">
                 <p>생성 시각: {formatDateTime(selectedSlide.generation.createdAt)}</p>
                 <p className="mt-1">모델: {selectedSlide.generation.imageModelId}</p>
-                <p className="mt-1">판매가 기준: ₩{formatKrw(selectedSlide.generation.sellKrw)}</p>
                 {selectedSlide.generation.textFidelityScore !== null ? (
                   <p className="mt-1">텍스트 일치도: {selectedSlide.generation.textFidelityScore}점</p>
                 ) : null}

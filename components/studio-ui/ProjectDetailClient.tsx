@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { authFetchJson, formatDateTime, formatKrw, getAccessToken } from "@/lib/studio/client";
+import { authFetchJson, formatDateTime, getAccessToken } from "@/lib/studio/client";
 
 type ProjectPrompt = {
   id: string;
@@ -24,9 +24,6 @@ type ProjectGeneration = {
   imageModelId: string;
   imageUrl: string;
   aspectRatio: string;
-  costUsd: number;
-  costKrw: number;
-  sellKrw: number;
   textFidelityScore: number | null;
   createdAt: string;
 };
@@ -290,7 +287,6 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
                   <div className="space-y-1 p-3 text-xs text-black/65">
                     <p className="font-semibold text-black/80">{prompt?.title || generation.promptId}</p>
                     <p>{generation.imageModelId}</p>
-                    <p>판매가 기준 ₩{formatKrw(generation.sellKrw)}</p>
                     <p>{formatDateTime(generation.createdAt)}</p>
                     <button
                       type="button"

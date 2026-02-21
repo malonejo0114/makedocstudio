@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { useLocaleText } from "@/components/studio-ui/LanguageProvider";
-import { getPricedModelCatalog } from "@/lib/studio/pricing";
 
 type FidelityStat = {
   imageModelId: string;
@@ -13,18 +12,30 @@ type FidelityStat = {
   count: number;
 };
 
+type PublicPricedModel = {
+  id: string;
+  provider: string;
+  name: string;
+  textSuccess: string;
+  speed: string;
+  price: {
+    creditsRequired: number;
+  };
+  highRes: {
+    creditsRequired: number;
+  } | null;
+};
+
 export default function PricingPageClient() {
   const t = useLocaleText({
     ko: {
       title: "모델/크레딧 가격표",
-      desc: "내부 원가(USD→KRW) 기준으로 판매가는 3배 후 100원 단위 반올림됩니다. 1크레딧은 100원입니다.",
+      desc: "내부 단가는 비공개이며 관리자 콘솔에서만 확인됩니다. 1크레딧은 100원입니다.",
       failedStats: "최근 실측 조회 실패:",
       textSuccess: "한글 텍스트",
       speed: "속도",
-      cost: "내부 원가",
-      sell: "판매가(3x)",
       creditUse: "차감 크레딧(1장)",
-      highRes: "4K 기준 원가/판매가/차감",
+      highRes: "4K 차감 크레딧",
       recentLabel: "최근 7일 한글 텍스트 실측",
       average: "평균",
       cases: "건",
@@ -34,14 +45,12 @@ export default function PricingPageClient() {
     },
     en: {
       title: "Model / Credit Pricing",
-      desc: "Sell price is 3x internal cost (USD→KRW), rounded to KRW 100 units. 1 credit = KRW 100.",
+      desc: "Internal cost/sell details are hidden from public and visible only in admin console. 1 credit = KRW 100.",
       failedStats: "Failed to load recent metrics:",
       textSuccess: "Korean text",
       speed: "Speed",
-      cost: "Internal cost",
-      sell: "Sell price (3x)",
       creditUse: "Credits per image",
-      highRes: "4K cost/sell/credits",
+      highRes: "4K credits",
       recentLabel: "Recent 7-day Korean text fidelity",
       average: "Avg",
       cases: "cases",
@@ -51,16 +60,25 @@ export default function PricingPageClient() {
     },
   });
   const [stats, setStats] = useState<FidelityStat[]>([]);
+  const [models, setModels] = useState<PublicPricedModel[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    fetch("/api/studio/pricing/stats")
-      .then((response) => response.json())
-      .then((payload) => {
+    Promise.all([
+      fetch("/api/studio/pricing/public").then((response) => response.json().then((payload) => ({ response, payload }))),
+      fetch("/api/studio/pricing/stats").then((response) => response.json().then((payload) => ({ response, payload }))),
+    ])
+      .then(([modelsResult, statsResult]) => {
         if (!mounted) return;
-        if (Array.isArray(payload?.stats)) {
-          setStats(payload.stats);
+        if (!modelsResult.response.ok) {
+          throw new Error(modelsResult.payload?.error || "가격표 조회 실패");
+        }
+        if (Array.isArray(modelsResult.payload?.models)) {
+          setModels(modelsResult.payload.models);
+        }
+        if (Array.isArray(statsResult.payload?.stats)) {
+          setStats(statsResult.payload.stats);
         }
       })
       .catch((err) => {
@@ -78,8 +96,6 @@ export default function PricingPageClient() {
     for (const stat of stats) map.set(stat.imageModelId, stat);
     return map;
   }, [stats]);
-
-  const models = getPricedModelCatalog();
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-20 pt-8">
@@ -108,13 +124,10 @@ export default function PricingPageClient() {
               </div>
 
               <div className="mt-4 space-y-1 text-sm text-black/75">
-                <p>{t.cost}: ₩{model.price.costKrw.toLocaleString()}</p>
-                <p>{t.sell}: ₩{model.price.sellKrw.toLocaleString()}</p>
                 <p>{t.creditUse}: {model.price.creditsRequired} credits</p>
                 {model.highRes && (
                   <p className="text-xs text-black/55">
-                    {t.highRes}: ₩{model.highRes.costKrw.toLocaleString()} / ₩
-                    {model.highRes.sellKrw.toLocaleString()} / {model.highRes.creditsRequired} credits
+                    {t.highRes}: {model.highRes.creditsRequired} credits
                   </p>
                 )}
               </div>

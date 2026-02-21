@@ -5,11 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { getPricedModelCatalog } from "@/lib/studio/pricing";
 import {
   authFetchJson,
   formatDateTime,
-  formatKrw,
   getAccessToken,
 } from "@/lib/studio/client";
 
@@ -111,7 +109,6 @@ type GenerationResult = {
   imageModelId: string;
   createdAt: string;
   textFidelityScore: number | null;
-  sellKrw: number;
 };
 
 type CreditModel = {
@@ -120,9 +117,9 @@ type CreditModel = {
   name: string;
   textSuccess: "상" | "중상" | "중";
   speed: "빠름" | "보통" | "느림";
-  price: { costUsd: number; costKrw: number; sellKrw: number; creditsRequired: number };
+  price: { creditsRequired: number };
   highRes:
-    | { costUsd: number; costKrw: number; sellKrw: number; creditsRequired: number }
+    | { creditsRequired: number }
     | null;
   balance: number;
 };
@@ -150,7 +147,6 @@ type GenerateResponse = {
     imageModelId: string;
     imageUrl: string;
     textFidelityScore: number | null;
-    sellKrw: number;
     createdAt: string;
   };
   balanceAfter: number;
@@ -346,10 +342,7 @@ function buildSupplementalDrafts(
 }
 
 export default function StudioWorkbench() {
-  const fallbackModels = getPricedModelCatalog().map((model) => ({
-    ...model,
-    balance: 0,
-  }));
+  const fallbackModels: CreditModel[] = [];
 
   const [mobileStep, setMobileStep] = useState(1);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -808,7 +801,6 @@ export default function StudioWorkbench() {
             imageModelId: payload.generation.imageModelId,
             createdAt: payload.generation.createdAt,
             textFidelityScore: payload.generation.textFidelityScore,
-            sellKrw: payload.generation.sellKrw,
           },
           ...filtered,
         ];
@@ -900,8 +892,7 @@ export default function StudioWorkbench() {
               >
                 {models.map((model) => (
                   <option key={model.id} value={model.id}>
-                    {model.name} | 잔액 {model.balance} | 원가 ₩{formatKrw(model.price.costKrw)} | 판매가 ₩
-                    {formatKrw(model.price.sellKrw)} | 차감 {model.price.creditsRequired}cr
+                    {model.name} | 잔액 {model.balance} | 차감 {model.price.creditsRequired}cr
                   </option>
                 ))}
               </select>
@@ -1405,7 +1396,6 @@ export default function StudioWorkbench() {
             <div className="mt-3 rounded-2xl border border-black/10 bg-black/[0.02] p-3 text-xs text-black/65">
               <p>생성 시각: {formatDateTime(selectedGeneration.createdAt)}</p>
               <p className="mt-1">모델: {selectedGeneration.imageModelId}</p>
-              <p className="mt-1">판매가 기준: ₩{formatKrw(selectedGeneration.sellKrw)}</p>
               {selectedGeneration.textFidelityScore !== null && (
                 <p className="mt-1">텍스트 일치도: {selectedGeneration.textFidelityScore}점</p>
               )}

@@ -44,7 +44,7 @@ async function loadProjectBundle(userId: string, projectId: string) {
     supabase
       .from("studio_generations")
       .select(
-        "id, prompt_id, image_model_id, image_url, aspect_ratio, cost_usd, cost_krw, sell_krw, text_fidelity_score, created_at",
+        "id, prompt_id, image_model_id, image_url, aspect_ratio, text_fidelity_score, created_at",
       )
       .eq("project_id", projectId)
       .eq("user_id", userId)
@@ -93,9 +93,6 @@ async function loadProjectBundle(userId: string, projectId: string) {
         imageModelId: row.image_model_id,
         imageUrl: row.image_url,
         aspectRatio: row.aspect_ratio,
-        costUsd: row.cost_usd,
-        costKrw: row.cost_krw,
-        sellKrw: row.sell_krw,
         textFidelityScore: row.text_fidelity_score,
         createdAt: row.created_at,
       })),

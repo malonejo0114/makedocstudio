@@ -2,7 +2,9 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 
 import AdminPromptLab from "@/components/studio-ui/AdminPromptLab";
+import AdminPricingManager from "@/components/studio-ui/AdminPricingManager";
 import AdminTemplatesManager from "@/components/studio-ui/AdminTemplatesManager";
+import AdminUserCreditsManager from "@/components/studio-ui/AdminUserCreditsManager";
 import { getAdminCookieName } from "@/lib/adminSession";
 
 async function logoutAction() {
@@ -43,6 +45,8 @@ export default function AdminPage() {
         </div>
       </section>
 
+      <AdminPricingManager />
+      <AdminUserCreditsManager />
       <AdminPromptLab />
       <AdminTemplatesManager />
     </main>
