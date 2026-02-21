@@ -342,6 +342,26 @@ function buildSupplementalDrafts(
     }));
 }
 
+function useObjectPreview(file: File | null) {
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  return previewUrl;
+}
+
 export default function StudioWorkbench() {
   const fallbackModels: CreditModel[] = [];
 
@@ -396,6 +416,10 @@ export default function StudioWorkbench() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const referencePreviewUrl = useObjectPreview(uploadFile);
+  const productPreviewUrl = useObjectPreview(productImageFile);
+  const logoPreviewUrl = useObjectPreview(logoImageFile);
+  const personPreviewUrl = useObjectPreview(personImageFile);
 
   const selectedPrompt = useMemo(
     () => prompts.find((item) => item.id === selectedPromptId) ?? null,
@@ -1035,9 +1059,13 @@ export default function StudioWorkbench() {
               }}
             />
             <span className="text-sm font-medium text-black/70">
-              {uploadFile ? `${uploadFile.name} 선택됨` : "레퍼런스 이미지 (선택)"}
+              {referenceImageUrl || referencePreviewUrl
+                ? "레퍼런스 이미지 선택됨"
+                : "레퍼런스 이미지 (선택)"}
             </span>
-            <p className="mt-1 text-xs text-black/45">JPG/PNG/WEBP</p>
+            {!referenceImageUrl && !referencePreviewUrl ? (
+              <p className="mt-1 text-xs text-black/45">JPG/PNG/WEBP</p>
+            ) : null}
           </label>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
@@ -1057,12 +1085,18 @@ export default function StudioWorkbench() {
               </button>
             )}
           </div>
-          {referenceImageUrl && (
-            <div className="mt-2 overflow-hidden rounded-xl border border-black/10 bg-white">
+          {(referenceImageUrl || referencePreviewUrl) && (
+            <div className="mt-2 w-full max-w-[240px] overflow-hidden rounded-xl border border-black/10 bg-white">
               <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
                 Reference
               </p>
-              <img src={referenceImageUrl} alt="레퍼런스 이미지" className="h-24 w-full object-cover" />
+              <div className="aspect-square w-full">
+                <img
+                  src={referenceImageUrl || referencePreviewUrl}
+                  alt="레퍼런스 이미지"
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </div>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -1145,7 +1179,7 @@ export default function StudioWorkbench() {
                     }}
                   />
                   <span className="text-xs font-medium text-black/65">
-                    {productImageFile ? `${productImageFile.name} 선택됨` : "제품 이미지 업로드"}
+                    {productImageUrl || productPreviewUrl ? "제품 이미지 선택됨" : "제품 이미지 업로드"}
                   </span>
                 </label>
               )}
@@ -1161,7 +1195,7 @@ export default function StudioWorkbench() {
                     }}
                   />
                   <span className="text-xs font-medium text-black/65">
-                    {logoImageFile ? `${logoImageFile.name} 선택됨` : "로고 이미지 업로드"}
+                    {logoImageUrl || logoPreviewUrl ? "로고 이미지 선택됨" : "로고 이미지 업로드"}
                   </span>
                 </label>
               )}
@@ -1177,37 +1211,49 @@ export default function StudioWorkbench() {
                     }}
                   />
                   <span className="text-xs font-medium text-black/65">
-                    {personImageFile ? `${personImageFile.name} 선택됨` : "인물 이미지 업로드"}
+                    {personImageUrl || personPreviewUrl ? "인물 이미지 선택됨" : "인물 이미지 업로드"}
                   </span>
                 </label>
               )}
             </div>
           )}
 
-          {(productImageUrl || logoImageUrl || personImageUrl) && (
+          {(productImageUrl || productPreviewUrl || logoImageUrl || logoPreviewUrl || personImageUrl || personPreviewUrl) && (
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              {productImageUrl && (
+              {(productImageUrl || productPreviewUrl) && (
                 <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
                   <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
                     Product
                   </p>
-                  <img src={productImageUrl} alt="제품 이미지" className="h-20 w-full object-cover" />
+                  <img
+                    src={productImageUrl || productPreviewUrl}
+                    alt="제품 이미지"
+                    className="h-20 w-full object-cover"
+                  />
                 </div>
               )}
-              {logoImageUrl && (
+              {(logoImageUrl || logoPreviewUrl) && (
                 <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
                   <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
                     Logo
                   </p>
-                  <img src={logoImageUrl} alt="로고 이미지" className="h-20 w-full object-contain p-2" />
+                  <img
+                    src={logoImageUrl || logoPreviewUrl}
+                    alt="로고 이미지"
+                    className="h-20 w-full object-contain p-2"
+                  />
                 </div>
               )}
-              {personImageUrl && (
+              {(personImageUrl || personPreviewUrl) && (
                 <div className="overflow-hidden rounded-xl border border-black/10 bg-white">
                   <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">
                     Person
                   </p>
-                  <img src={personImageUrl} alt="인물 이미지" className="h-20 w-full object-cover" />
+                  <img
+                    src={personImageUrl || personPreviewUrl}
+                    alt="인물 이미지"
+                    className="h-20 w-full object-cover"
+                  />
                 </div>
               )}
             </div>

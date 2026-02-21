@@ -50,7 +50,7 @@ export default function SiteHeader({
 
   return (
     <header className="sticky top-5 z-50 mx-auto w-full max-w-7xl px-4">
-      <div className="flex items-center justify-between rounded-full border border-black/10 bg-[rgba(245,245,240,0.85)] px-4 py-3 shadow-[0_20px_40px_-30px_rgba(0,0,0,0.35)] backdrop-blur-xl md:px-6">
+      <div className="flex items-center justify-end gap-2 rounded-full border border-black/10 bg-[rgba(245,245,240,0.85)] px-4 py-3 shadow-[0_20px_40px_-30px_rgba(0,0,0,0.35)] backdrop-blur-xl md:justify-between md:px-6">
         <nav className="hidden items-center gap-2 md:flex">
           {links.map((item) => {
             const active = pathname === item.href;
@@ -71,17 +71,20 @@ export default function SiteHeader({
           })}
         </nav>
 
-        <Link href="/" className="rounded-full border border-black/10 bg-[#0B0B0C] px-5 py-2 text-sm font-semibold text-[#F5F5F0]">
+        <Link
+          href="/"
+          className="hidden rounded-full border border-black/10 bg-[#0B0B0C] px-5 py-2 text-sm font-semibold text-[#F5F5F0] md:inline-flex"
+        >
           {t.brand}
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <LanguageToggle />
           {showStudioCta ? (
             <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="/studio"
-                className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-[#D6FF4F] px-4 py-2 text-sm font-semibold text-[#0B0B0C]"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-black/10 bg-[#D6FF4F] px-4 py-2 text-sm font-semibold text-[#0B0B0C]"
               >
                 {t.openStudio}
                 <motion.span whileHover={{ rotate: 35 }}>↗</motion.span>
