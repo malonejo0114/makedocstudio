@@ -1,10 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  getAdminCookieName,
-  isAdminAuthConfigured,
-  verifyAdminSessionToken,
-} from "@/lib/adminSession";
+const ADMIN_COOKIE_NAME = "adg_admin_session";
+
+function getAdminPassword(): string {
+  return process.env.ADMIN_PASSWORD?.trim() || "";
+}
+
+function getAdminSecret(): string {
+  return process.env.ADMIN_AUTH_SECRET?.trim() || "adg-admin-secret-v1";
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const arr = Array.from(new Uint8Array(digest));
+  return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function isAdminAuthConfigured(): boolean {
+  return Boolean(getAdminPassword());
+}
+
+function getAdminCookieName(): string {
+  return ADMIN_COOKIE_NAME;
+}
+
+async function verifyAdminSessionToken(token: string | undefined): Promise<boolean> {
+  if (!token || !isAdminAuthConfigured()) return false;
+  const expected = await sha256Hex(`${getAdminPassword()}:${getAdminSecret()}:session-v1`);
+  return token === expected;
+}
 
 function isBlockedLegacyPath(pathname: string): boolean {
   return (
