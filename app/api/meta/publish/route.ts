@@ -16,6 +16,24 @@ const MetaPublishSchema = z.object({
   objective: z.enum(["OUTCOME_TRAFFIC", "OUTCOME_LEADS", "OUTCOME_SALES"]).optional(),
   dailyBudget: z.number().int().min(100).max(1_000_000_000).optional(),
   specialAdCategories: z.array(z.string().min(1).max(40)).max(10).optional(),
+  countryCodes: z
+    .array(z.string().trim().regex(/^[A-Za-z]{2}$/))
+    .max(20)
+    .optional(),
+  ageMin: z.number().int().min(13).max(65).optional(),
+  ageMax: z.number().int().min(13).max(65).optional(),
+}).superRefine((value, ctx) => {
+  if (
+    Number.isFinite(value.ageMin ?? NaN) &&
+    Number.isFinite(value.ageMax ?? NaN) &&
+    (value.ageMin ?? 0) > (value.ageMax ?? 0)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "ageMin은 ageMax보다 클 수 없습니다.",
+      path: ["ageMin"],
+    });
+  }
 });
 
 function stringifyUnknown(value: unknown) {
@@ -142,6 +160,9 @@ export async function POST(request: Request) {
       objective: parsed.data.objective,
       dailyBudget: parsed.data.dailyBudget,
       specialAdCategories: parsed.data.specialAdCategories ?? [],
+      countryCodes: parsed.data.countryCodes,
+      ageMin: parsed.data.ageMin,
+      ageMax: parsed.data.ageMax,
     });
 
     const insertLog = await supabase.from("studio_meta_publishes").insert({
@@ -162,6 +183,9 @@ export async function POST(request: Request) {
           headline,
           primaryText,
           linkUrl,
+          countryCodes: parsed.data.countryCodes ?? ["KR"],
+          ageMin: parsed.data.ageMin ?? 20,
+          ageMax: parsed.data.ageMax ?? 55,
           adAccountId: connection.ad_account_id,
           pageId: connection.page_id,
         },

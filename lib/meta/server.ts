@@ -299,6 +299,9 @@ export async function createMetaPausedDraft(input: {
   objective?: "OUTCOME_TRAFFIC" | "OUTCOME_LEADS" | "OUTCOME_SALES";
   dailyBudget?: number;
   specialAdCategories?: string[];
+  countryCodes?: string[];
+  ageMin?: number;
+  ageMax?: number;
 }): Promise<{
   campaignId: string;
   adsetId: string;
@@ -309,6 +312,19 @@ export async function createMetaPausedDraft(input: {
   const objective = input.objective || "OUTCOME_TRAFFIC";
   const normalizedAdAccountId = normalizeAdAccountId(input.adAccountId);
   if (!normalizedAdAccountId) throw new Error("Meta 광고계정 ID가 비어 있습니다.");
+  const countryCodes =
+    Array.isArray(input.countryCodes) && input.countryCodes.length > 0
+      ? input.countryCodes
+          .map((code) => String(code || "").trim().toUpperCase())
+          .filter((code) => /^[A-Z]{2}$/.test(code))
+      : ["KR"];
+  const ageMin = Number.isFinite(input.ageMin ?? NaN)
+    ? Math.max(13, Math.min(65, Math.floor(input.ageMin ?? 20)))
+    : 20;
+  const ageMaxCandidate = Number.isFinite(input.ageMax ?? NaN)
+    ? Math.max(13, Math.min(65, Math.floor(input.ageMax ?? 55)))
+    : 55;
+  const ageMax = Math.max(ageMin, ageMaxCandidate);
 
   const campaign = await graphRequest<{ id: string }>({
     method: "POST",
@@ -319,6 +335,8 @@ export async function createMetaPausedDraft(input: {
       objective,
       status: "PAUSED",
       special_ad_categories: JSON.stringify(input.specialAdCategories ?? []),
+      // Required by recent Marketing API versions when campaign budget sharing is off.
+      is_adset_budget_sharing_enabled: false,
     },
   });
 
@@ -337,6 +355,11 @@ export async function createMetaPausedDraft(input: {
       bid_strategy: "LOWEST_COST_WITHOUT_CAP",
       destination_type: "WEBSITE",
       promoted_object: JSON.stringify({ page_id: input.pageId }),
+      targeting: JSON.stringify({
+        geo_locations: { countries: countryCodes.length > 0 ? countryCodes : ["KR"] },
+        age_min: ageMin,
+        age_max: ageMax,
+      }),
       status: "PAUSED",
     },
   });
