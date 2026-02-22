@@ -5,6 +5,7 @@ import AdminPromptLab from "@/components/studio-ui/AdminPromptLab";
 import AdminPricingManager from "@/components/studio-ui/AdminPricingManager";
 import AdminModelTierManager from "@/components/studio-ui/AdminModelTierManager";
 import AdminSeoManager from "@/components/studio-ui/AdminSeoManager";
+import AdminSiteCopyManager from "@/components/studio-ui/AdminSiteCopyManager";
 import AdminTemplatesManager from "@/components/studio-ui/AdminTemplatesManager";
 import AdminUserCreditsManager from "@/components/studio-ui/AdminUserCreditsManager";
 import { getAdminCookieName } from "@/lib/adminSession";
@@ -50,6 +51,7 @@ export default function AdminPage() {
       <AdminPricingManager />
       <AdminModelTierManager />
       <AdminUserCreditsManager />
+      <AdminSiteCopyManager />
       <AdminSeoManager />
       <AdminPromptLab />
       <AdminTemplatesManager />

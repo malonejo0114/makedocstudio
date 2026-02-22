@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 
 import { useLanguage, useLocaleText } from "@/components/studio-ui/LanguageProvider";
 import type { Locale } from "@/lib/i18n/config";
+import type { SiteCopySettings } from "@/lib/siteCopySettings";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type AuthMode = "signin" | "signup";
@@ -182,6 +183,7 @@ export default function LandingPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [runtimeCopy, setRuntimeCopy] = useState<SiteCopySettings | null>(null);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -194,17 +196,52 @@ export default function LandingPage() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/site-copy/public", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { settings?: SiteCopySettings }
+          | null;
+        if (!response.ok || !payload?.settings) return;
+        if (mounted) setRuntimeCopy(payload.settings);
+      })
+      .catch(() => {
+        // ignore fetch failures and keep defaults
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const copy = useMemo(() => {
+    const landingOverride = runtimeCopy?.landing?.[locale];
+    if (!landingOverride) return t;
+    return {
+      ...t,
+      ...landingOverride,
+      processSteps:
+        Array.isArray(landingOverride.processSteps) && landingOverride.processSteps.length > 0
+          ? landingOverride.processSteps
+          : t.processSteps,
+      coreFeatures:
+        Array.isArray(landingOverride.coreFeatures) && landingOverride.coreFeatures.length > 0
+          ? landingOverride.coreFeatures
+          : t.coreFeatures,
+    };
+  }, [locale, runtimeCopy, t]);
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setMessage(null);
 
     if (!email.includes("@")) {
-      setError(t.invalidEmail);
+      setError(copy.invalidEmail);
       return;
     }
     if (password.length < 6) {
-      setError(t.passwordTooShort);
+      setError(copy.passwordTooShort);
       return;
     }
 
@@ -221,12 +258,12 @@ export default function LandingPage() {
           });
           const devPayload = await devRes.json().catch(() => null);
           if (!devRes.ok) {
-            throw new Error(devPayload?.error || t.signupFailed);
+            throw new Error(devPayload?.error || copy.signupFailed);
           }
         } else {
           const signUp = await supabase.auth.signUp({ email, password });
           if (signUp.error) throw signUp.error;
-          setMessage(t.signedUp);
+          setMessage(copy.signedUp);
           return;
         }
       }
@@ -236,7 +273,7 @@ export default function LandingPage() {
       router.push("/studio");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.authFailed);
+      setError(err instanceof Error ? err.message : copy.authFailed);
     } finally {
       setLoading(false);
     }
@@ -245,7 +282,7 @@ export default function LandingPage() {
   async function onSignOut() {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
-    setMessage(t.signedOut);
+    setMessage(copy.signedOut);
     setError(null);
     router.refresh();
   }
@@ -283,8 +320,8 @@ export default function LandingPage() {
           err instanceof Error
             ? err.message
             : provider === "kakao"
-              ? t.kakaoFailed
-              : t.googleFailed,
+              ? copy.kakaoFailed
+              : copy.googleFailed,
         );
       }
       setOauthProvider(null);
@@ -316,30 +353,30 @@ export default function LandingPage() {
             />
             <p className="text-xs uppercase tracking-[0.24em] text-[#D6FF4F]">MakeDoc Studio</p>
             <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-6xl">
-              {t.heroTitle.split("\n")[0]}
+              {copy.heroTitle.split("\n")[0]}
               <br />
-              {t.heroTitle.split("\n")[1]}
+              {copy.heroTitle.split("\n")[1]}
             </h1>
             <p className="mt-4 text-base text-[#F5F5F0]/75 md:text-lg">
-              {t.heroSub}
+              {copy.heroSub}
             </p>
             <div className="mt-7 flex flex-wrap gap-2.5">
               <Link
                 href="/studio"
                 className="inline-flex items-center gap-2 rounded-full bg-[#D6FF4F] px-5 py-3 text-sm font-semibold text-[#0B0B0C] transition hover:-translate-y-0.5"
               >
-                {t.startStudio}
+                {copy.startStudio}
                 <span>↗</span>
               </Link>
               <Link
                 href="/examples"
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-[#F5F5F0] transition hover:bg-white/10"
               >
-                {t.seeExamples}
+                {copy.seeExamples}
               </Link>
             </div>
             <div className="mt-8 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70">
-              {t.pricingHintPrefix} ₩100 / {t.pricingHintSuffix}
+              {copy.pricingHintPrefix} ₩100 / {copy.pricingHintSuffix}
             </div>
           </div>
         </Reveal>
@@ -356,7 +393,7 @@ export default function LandingPage() {
 
             <div className="relative mt-32">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-xs uppercase tracking-[0.2em] text-black/45">{t.quickLogin}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-black/45">{copy.quickLogin}</p>
                 <div className="rounded-full border border-black/10 bg-black/[0.03] p-1 text-xs font-semibold">
                   <button
                     type="button"
@@ -366,7 +403,7 @@ export default function LandingPage() {
                       authMode === "signin" ? "bg-[#0B0B0C] text-[#D6FF4F]" : "text-black/55",
                     ].join(" ")}
                   >
-                    {t.signin}
+                    {copy.signin}
                   </button>
                   <button
                     type="button"
@@ -376,7 +413,7 @@ export default function LandingPage() {
                       authMode === "signup" ? "bg-[#0B0B0C] text-[#D6FF4F]" : "text-black/55",
                     ].join(" ")}
                   >
-                    {t.signup}
+                    {copy.signup}
                   </button>
                 </div>
               </div>
@@ -395,20 +432,20 @@ export default function LandingPage() {
               {sessionEmail ? (
                 <div className="space-y-3 rounded-2xl border border-black/10 bg-black/[0.02] p-4">
                   <p className="text-sm font-semibold text-black/75">{sessionEmail}</p>
-                  <p className="text-xs text-black/55">{t.alreadySignedIn}</p>
+                  <p className="text-xs text-black/55">{copy.alreadySignedIn}</p>
                   <div className="flex gap-2">
                     <Link
                       href="/studio"
                       className="inline-flex items-center gap-1 rounded-full bg-[#0B0B0C] px-3 py-1.5 text-xs font-semibold text-[#D6FF4F]"
                     >
-                      {t.openStudio}
+                      {copy.openStudio}
                     </Link>
                     <button
                       type="button"
                       onClick={() => void onSignOut()}
                       className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black/70"
                     >
-                      {t.signOut}
+                      {copy.signOut}
                     </button>
                   </div>
                 </div>
@@ -418,14 +455,14 @@ export default function LandingPage() {
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    placeholder={t.emailPlaceholder}
+                    placeholder={copy.emailPlaceholder}
                     className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm"
                   />
                   <input
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder={t.passwordPlaceholder}
+                    placeholder={copy.passwordPlaceholder}
                     className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm"
                   />
                   <button
@@ -433,12 +470,12 @@ export default function LandingPage() {
                     disabled={loading || oauthProvider !== null}
                     className="w-full rounded-full bg-[#0B0B0C] px-4 py-2.5 text-sm font-semibold text-[#D6FF4F] transition hover:-translate-y-0.5 disabled:opacity-60"
                   >
-                    {loading ? t.processing : authMode === "signin" ? t.signin : t.signupAndStart}
+                    {loading ? copy.processing : authMode === "signin" ? copy.signin : copy.signupAndStart}
                   </button>
 
                   <div className="flex items-center gap-2 text-[11px] text-black/35">
                     <span className="h-px flex-1 bg-black/10" />
-                    {t.or}
+                    {copy.or}
                     <span className="h-px flex-1 bg-black/10" />
                   </div>
 
@@ -451,7 +488,7 @@ export default function LandingPage() {
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-black/15 text-xs">
                       G
                     </span>
-                    {oauthProvider === "google" ? t.googleRedirecting : t.googleContinue}
+                    {oauthProvider === "google" ? copy.googleRedirecting : copy.googleContinue}
                   </button>
                   {locale === "ko" ? (
                     <button
@@ -463,14 +500,14 @@ export default function LandingPage() {
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-black/20 text-[10px] font-black">
                         K
                       </span>
-                      {oauthProvider === "kakao" ? t.kakaoRedirecting : t.kakaoContinue}
+                      {oauthProvider === "kakao" ? copy.kakaoRedirecting : copy.kakaoContinue}
                     </button>
                   ) : null}
                 </form>
               )}
 
               <Link href="/guide" className="mt-3 inline-block text-xs font-semibold text-black/60 underline">
-                {t.tutorial}
+                {copy.tutorial}
               </Link>
             </div>
           </div>
@@ -480,7 +517,7 @@ export default function LandingPage() {
       <Reveal>
         <section className="rounded-[30px] border border-black/10 bg-white/80 p-4 backdrop-blur-sm md:p-5">
           <div className="flex flex-wrap gap-2">
-            {t.processSteps.map((step) => (
+            {copy.processSteps.map((step) => (
               <span
                 key={step}
                 className="rounded-full border border-black/10 bg-[#F5F5F0] px-4 py-2 text-sm font-medium text-[#0B0B0C]"
@@ -493,13 +530,13 @@ export default function LandingPage() {
       </Reveal>
 
       <section className="grid gap-4 md:grid-cols-3">
-        {t.coreFeatures.map((feature, index) => (
+        {copy.coreFeatures.map((feature, index) => (
           <Reveal key={feature.title} delay={index * 0.06}>
             <motion.article
               whileHover={{ y: -4 }}
               className="rounded-[30px] border border-black/10 bg-white p-6 shadow-[0_25px_60px_-45px_rgba(0,0,0,0.55)]"
             >
-              <p className="text-xs uppercase tracking-[0.2em] text-black/40">{t.featureLabel}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-black/40">{copy.featureLabel}</p>
               <h3 className="mt-3 text-2xl font-semibold text-[#0B0B0C]">{feature.title}</h3>
               <p className="mt-2 text-sm text-black/65">{feature.description}</p>
             </motion.article>
@@ -509,24 +546,24 @@ export default function LandingPage() {
 
       <Reveal>
         <section className="rounded-[34px] border border-black/15 bg-[#0B0B0C] px-8 py-10 text-[#F5F5F0]">
-          <p className="text-xs uppercase tracking-[0.24em] text-[#D6FF4F]">{t.ready}</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-[#D6FF4F]">{copy.ready}</p>
           <h2 className="mt-3 text-3xl font-semibold leading-tight md:text-4xl">
-            {t.finalTitle.split("\n")[0]}
+            {copy.finalTitle.split("\n")[0]}
             <br />
-            {t.finalTitle.split("\n")[1]}
+            {copy.finalTitle.split("\n")[1]}
           </h2>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
               href="/studio"
               className="inline-flex items-center gap-2 rounded-full bg-[#D6FF4F] px-5 py-2.5 text-sm font-semibold text-[#0B0B0C]"
             >
-              {t.openStudio}
+              {copy.openStudio}
             </Link>
             <Link
               href="/pricing"
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-[#F5F5F0]"
             >
-              {t.checkPricing}
+              {copy.checkPricing}
             </Link>
           </div>
         </section>
