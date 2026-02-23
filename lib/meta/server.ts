@@ -35,6 +35,7 @@ function getMetaConfig() {
   const appId = (process.env.META_APP_ID || "").trim();
   const appSecret = (process.env.META_APP_SECRET || "").trim();
   const redirectUri = (process.env.META_REDIRECT_URI || "").trim();
+  const businessLoginConfigId = (process.env.META_BUSINESS_LOGIN_CONFIG_ID || "").trim();
   const graphVersion = process.env.META_GRAPH_VERSION || "v22.0";
   const stateSecret =
     process.env.META_STATE_SECRET ||
@@ -56,6 +57,7 @@ function getMetaConfig() {
     appId,
     appSecret,
     redirectUri,
+    businessLoginConfigId,
     graphVersion,
     stateSecret,
     scope,
@@ -133,9 +135,16 @@ export function buildMetaOauthUrl(userId: string) {
     client_id: config.appId,
     redirect_uri: config.redirectUri,
     response_type: "code",
-    scope: config.scope,
     state,
   });
+
+  if (config.businessLoginConfigId) {
+    // Business Login for Facebook: permissions are managed in config_id settings.
+    query.set("config_id", config.businessLoginConfigId);
+  } else {
+    // Classic Facebook Login: request scopes directly.
+    query.set("scope", config.scope);
+  }
 
   return {
     url: `https://www.facebook.com/${config.graphVersion}/dialog/oauth?${query.toString()}`,
