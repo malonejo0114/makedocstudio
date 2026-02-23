@@ -418,15 +418,7 @@ export async function createMetaPausedDraft(input: {
   let campaign: { id: string } | null = null;
   let resolvedObjective: CampaignObjective = requestedObjective;
 
-  const objectiveCandidates = Array.from(
-    new Set(
-      [
-        requestedObjective,
-        requestedObjective === "OUTCOME_TRAFFIC" ? "LINK_CLICKS" : "",
-        requestedObjective === "OUTCOME_TRAFFIC" ? "TRAFFIC" : "",
-      ].filter(Boolean),
-    ),
-  ) as CampaignObjective[];
+  const objectiveCandidates = [requestedObjective];
   const specialCategoryCandidates = Array.from(
     new Map(
       [specialAdCategories, specialAdCategories.length === 1 && specialAdCategories[0] === "NONE" ? [] : null]
@@ -449,6 +441,7 @@ export async function createMetaPausedDraft(input: {
             name: input.campaignName,
             objective: objectiveCandidate,
             status: "PAUSED",
+            is_adset_budget_sharing_enabled: false,
             special_ad_categories: JSON.stringify(categoryCandidate),
           },
         });
@@ -473,10 +466,7 @@ export async function createMetaPausedDraft(input: {
 
   let adset: { id: string };
   try {
-    const optimizationGoal =
-      resolvedObjective === "OUTCOME_TRAFFIC" || resolvedObjective === "TRAFFIC" || resolvedObjective === "LINK_CLICKS"
-        ? "LINK_CLICKS"
-        : "REACH";
+    const optimizationGoal = resolvedObjective === "OUTCOME_TRAFFIC" ? "LINK_CLICKS" : "REACH";
 
     adset = await graphRequest<{ id: string }>({
       method: "POST",
