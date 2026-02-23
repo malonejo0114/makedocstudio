@@ -14,6 +14,9 @@ type MetaGraphError = {
     type?: string;
     code?: number;
     error_subcode?: number;
+    error_data?: unknown;
+    error_user_title?: string;
+    error_user_msg?: string;
     fbtrace_id?: string;
   };
 };
@@ -126,7 +129,57 @@ function buildGraphErrorMessage(payload: MetaGraphError | null, fallback: string
       ? ` subcode=${String(payload.error.error_subcode)}`
       : "";
   const trace = payload?.error?.fbtrace_id ? ` trace=${payload.error.fbtrace_id}` : "";
-  return `Meta API 오류: ${message}${type}${code}${subcode}${trace}`;
+
+  let userMessage = "";
+  if (payload?.error?.error_user_title || payload?.error?.error_user_msg) {
+    userMessage = ` user=${[payload.error.error_user_title, payload.error.error_user_msg]
+      .filter(Boolean)
+      .join(" - ")}`;
+  }
+
+  let blame = "";
+  if (payload?.error?.error_data) {
+    try {
+      const data =
+        typeof payload.error.error_data === "string"
+          ? payload.error.error_data
+          : JSON.stringify(payload.error.error_data);
+      if (data) {
+        blame = ` data=${data.slice(0, 260)}`;
+      }
+    } catch {
+      // ignore parsing errors for additional error_data
+    }
+  }
+
+  return `Meta API 오류: ${message}${type}${code}${subcode}${trace}${userMessage}${blame}`;
+}
+
+function normalizeSpecialAdCategories(categories?: string[]) {
+  const normalized = Array.isArray(categories)
+    ? categories
+        .map((item) => String(item || "").trim().toUpperCase())
+        .filter(Boolean)
+    : [];
+
+  const allowed = new Set([
+    "NONE",
+    "CREDIT",
+    "EMPLOYMENT",
+    "HOUSING",
+    "ISSUES_ELECTIONS_POLITICS",
+  ]);
+  const filtered = normalized.filter((item) => allowed.has(item));
+
+  if (filtered.length === 0) return ["NONE"];
+  const unique = Array.from(new Set(filtered));
+
+  // NONE cannot be combined with other special categories.
+  if (unique.includes("NONE") && unique.length > 1) {
+    return unique.filter((item) => item !== "NONE");
+  }
+
+  return unique;
 }
 
 export function buildMetaOauthUrl(userId: string) {
@@ -338,7 +391,13 @@ export async function createMetaPausedDraft(input: {
   adId: string;
 }> {
   const config = getMetaConfig();
-  const objective = input.objective || "OUTCOME_TRAFFIC";
+  type CampaignObjective =
+    | "OUTCOME_TRAFFIC"
+    | "OUTCOME_LEADS"
+    | "OUTCOME_SALES"
+    | "LINK_CLICKS"
+    | "TRAFFIC";
+  const requestedObjective: CampaignObjective = input.objective || "OUTCOME_TRAFFIC";
   const normalizedAdAccountId = normalizeAdAccountId(input.adAccountId);
   if (!normalizedAdAccountId) throw new Error("Meta 광고계정 ID가 비어 있습니다.");
   const countryCodes =
@@ -354,30 +413,71 @@ export async function createMetaPausedDraft(input: {
     ? Math.max(13, Math.min(65, Math.floor(input.ageMax ?? 55)))
     : 55;
   const ageMax = Math.max(ageMin, ageMaxCandidate);
+  const specialAdCategories = normalizeSpecialAdCategories(input.specialAdCategories);
 
-  let campaign: { id: string };
-  try {
-    campaign = await graphRequest<{ id: string }>({
-      method: "POST",
-      path: `/act_${normalizedAdAccountId}/campaigns`,
-      accessToken: input.accessToken,
-      params: {
-        name: input.campaignName,
-        objective,
-        status: "PAUSED",
-        special_ad_categories: JSON.stringify(input.specialAdCategories ?? []),
-      },
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "알 수 없는 오류";
-    throw new Error(`캠페인 생성 실패: ${message}`);
+  let campaign: { id: string } | null = null;
+  let resolvedObjective: CampaignObjective = requestedObjective;
+
+  const objectiveCandidates = Array.from(
+    new Set(
+      [
+        requestedObjective,
+        requestedObjective === "OUTCOME_TRAFFIC" ? "LINK_CLICKS" : "",
+        requestedObjective === "OUTCOME_TRAFFIC" ? "TRAFFIC" : "",
+      ].filter(Boolean),
+    ),
+  ) as CampaignObjective[];
+  const specialCategoryCandidates = Array.from(
+    new Map(
+      [specialAdCategories, specialAdCategories.length === 1 && specialAdCategories[0] === "NONE" ? [] : null]
+        .filter((value): value is string[] => Array.isArray(value))
+        .map((value) => [JSON.stringify(value), value]),
+    ).values(),
+  );
+
+  const campaignErrors: string[] = [];
+  let campaignCreated = false;
+
+  for (const objectiveCandidate of objectiveCandidates) {
+    for (const categoryCandidate of specialCategoryCandidates) {
+      try {
+        campaign = await graphRequest<{ id: string }>({
+          method: "POST",
+          path: `/act_${normalizedAdAccountId}/campaigns`,
+          accessToken: input.accessToken,
+          params: {
+            name: input.campaignName,
+            objective: objectiveCandidate,
+            status: "PAUSED",
+            special_ad_categories: JSON.stringify(categoryCandidate),
+          },
+        });
+        resolvedObjective = objectiveCandidate;
+        campaignCreated = true;
+        break;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "알 수 없는 오류";
+        campaignErrors.push(
+          `objective=${objectiveCandidate}, special_ad_categories=${JSON.stringify(categoryCandidate)} => ${message}`,
+        );
+      }
+    }
+    if (campaignCreated) break;
   }
 
-  if (!campaign.id) throw new Error("Meta 캠페인 생성에 실패했습니다.");
+  if (!campaignCreated) {
+    throw new Error(`캠페인 생성 실패: ${campaignErrors.join(" | ").slice(0, 1800)}`);
+  }
+
+  if (!campaign || !campaign.id) throw new Error("Meta 캠페인 생성에 실패했습니다.");
 
   let adset: { id: string };
   try {
+    const optimizationGoal =
+      resolvedObjective === "OUTCOME_TRAFFIC" || resolvedObjective === "TRAFFIC" || resolvedObjective === "LINK_CLICKS"
+        ? "LINK_CLICKS"
+        : "REACH";
+
     adset = await graphRequest<{ id: string }>({
       method: "POST",
       path: `/act_${normalizedAdAccountId}/adsets`,
@@ -387,7 +487,7 @@ export async function createMetaPausedDraft(input: {
         campaign_id: campaign.id,
         daily_budget: Math.max(100, Math.floor(input.dailyBudget ?? config.defaultDailyBudget)),
         billing_event: "IMPRESSIONS",
-        optimization_goal: "LINK_CLICKS",
+        optimization_goal: optimizationGoal,
         targeting: JSON.stringify({
           geo_locations: { countries: countryCodes.length > 0 ? countryCodes : ["KR"] },
           age_min: ageMin,
