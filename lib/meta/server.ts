@@ -483,36 +483,72 @@ export async function createMetaPausedDraft(input: {
   const adsetErrors: string[] = [];
   let adsetCreated = false;
   adset = { id: "" };
+  const dailyBudget = Math.max(100, Math.floor(input.dailyBudget ?? config.defaultDailyBudget));
+  const targeting = JSON.stringify({
+    geo_locations: { countries: countryCodes.length > 0 ? countryCodes : ["KR"] },
+    age_min: ageMin,
+    age_max: ageMax,
+  });
+  const bidStrategyCandidates: Array<{
+    bid_strategy?: string;
+    bid_amount?: number;
+  }> = [
+    { bid_strategy: "LOWEST_COST_WITHOUT_CAP" },
+    {},
+    { bid_strategy: "LOWEST_COST_WITH_BID_CAP", bid_amount: 1000 },
+    { bid_strategy: "COST_CAP", bid_amount: 1000 },
+  ];
+  const sharingFlagCandidates: Array<string | number | boolean | undefined> = [
+    resolvedBudgetSharingFlag,
+    undefined,
+  ];
 
   for (const optimizationGoal of optimizationGoalCandidates) {
-    try {
-      adset = await graphRequest<{ id: string }>({
-        method: "POST",
-        path: `/act_${normalizedAdAccountId}/adsets`,
-        accessToken: input.accessToken,
-        params: {
-          name: input.adSetName,
-          campaign_id: campaign.id,
-          daily_budget: Math.max(100, Math.floor(input.dailyBudget ?? config.defaultDailyBudget)),
-          billing_event: "IMPRESSIONS",
-          optimization_goal: optimizationGoal,
-          bid_strategy: "LOWEST_COST_WITHOUT_CAP",
-          is_adset_budget_sharing_enabled: resolvedBudgetSharingFlag,
-          destination_type: "WEBSITE",
-          targeting: JSON.stringify({
-            geo_locations: { countries: countryCodes.length > 0 ? countryCodes : ["KR"] },
-            age_min: ageMin,
-            age_max: ageMax,
-          }),
-          status: "PAUSED",
-        },
-      });
-      adsetCreated = true;
-      break;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "알 수 없는 오류";
-      adsetErrors.push(`optimization_goal=${optimizationGoal} => ${message}`);
+    const billingEventCandidates =
+      optimizationGoal === "LINK_CLICKS"
+        ? ["LINK_CLICKS", "IMPRESSIONS"]
+        : optimizationGoal === "LANDING_PAGE_VIEWS"
+          ? ["IMPRESSIONS", "LINK_CLICKS"]
+          : ["IMPRESSIONS"];
+
+    for (const billingEvent of billingEventCandidates) {
+      for (const sharingFlag of sharingFlagCandidates) {
+        for (const bidStrategy of bidStrategyCandidates) {
+          try {
+            const params: Record<string, string | number | boolean | undefined> = {
+              name: input.adSetName,
+              campaign_id: campaign.id,
+              daily_budget: dailyBudget,
+              billing_event: billingEvent,
+              optimization_goal: optimizationGoal,
+              destination_type: "WEBSITE",
+              targeting,
+              status: "PAUSED",
+              bid_strategy: bidStrategy.bid_strategy,
+              bid_amount: bidStrategy.bid_amount,
+              is_adset_budget_sharing_enabled: sharingFlag,
+            };
+
+            adset = await graphRequest<{ id: string }>({
+              method: "POST",
+              path: `/act_${normalizedAdAccountId}/adsets`,
+              accessToken: input.accessToken,
+              params,
+            });
+            adsetCreated = true;
+            break;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "알 수 없는 오류";
+            adsetErrors.push(
+              `optimization_goal=${optimizationGoal}, billing_event=${billingEvent}, bid_strategy=${bidStrategy.bid_strategy ?? "omit"}, bid_amount=${bidStrategy.bid_amount ?? "omit"}, is_adset_budget_sharing_enabled=${String(sharingFlag)} => ${message}`,
+            );
+          }
+        }
+        if (adsetCreated) break;
+      }
+      if (adsetCreated) break;
     }
+    if (adsetCreated) break;
   }
 
   if (!adsetCreated) {
