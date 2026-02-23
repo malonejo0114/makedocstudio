@@ -557,8 +557,11 @@ export async function createMetaPausedDraft(input: {
 
   if (!adset.id) throw new Error("Meta 광고세트 생성에 실패했습니다.");
 
-  // Upload image to ad account and use returned image_hash for creative.
+  // Upload image to ad account and use returned image_hash for creative when possible.
+  // Some app setups can create campaigns/adsets but are blocked on /adimages capability.
+  // In that case, we fall back to direct `picture` URL on creative.
   let imageHash = "";
+  let imageUploadError: string | null = null;
   try {
     const imageUpload = await graphRequest<{
       images?: Record<string, { hash?: string }>;
@@ -584,12 +587,7 @@ export async function createMetaPausedDraft(input: {
       }
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    throw new Error(`이미지 업로드 실패: ${message}`);
-  }
-
-  if (!imageHash) {
-    throw new Error("이미지 업로드는 성공했지만 image_hash를 받지 못했습니다.");
+    imageUploadError = error instanceof Error ? error.message : "알 수 없는 오류";
   }
 
   const baseObjectStorySpec: Record<string, unknown> = {
@@ -600,14 +598,41 @@ export async function createMetaPausedDraft(input: {
     baseObjectStorySpec.instagram_actor_id = instagramActorId;
   }
 
-  const creativeSpecCandidates: Array<Record<string, unknown>> = [
+  const creativeSpecCandidates: Array<Record<string, unknown>> = [];
+  if (imageHash) {
+    creativeSpecCandidates.push(
+      {
+        ...baseObjectStorySpec,
+        link_data: {
+          link: input.linkUrl,
+          message: input.primaryText,
+          name: input.headline,
+          image_hash: imageHash,
+          call_to_action: {
+            type: "LEARN_MORE",
+            value: { link: input.linkUrl },
+          },
+        },
+      },
+      {
+        ...baseObjectStorySpec,
+        link_data: {
+          link: input.linkUrl,
+          message: input.primaryText,
+          name: input.headline,
+          image_hash: imageHash,
+        },
+      },
+    );
+  }
+  creativeSpecCandidates.push(
     {
       ...baseObjectStorySpec,
       link_data: {
         link: input.linkUrl,
         message: input.primaryText,
         name: input.headline,
-        image_hash: imageHash,
+        picture: input.imageUrl,
         call_to_action: {
           type: "LEARN_MORE",
           value: { link: input.linkUrl },
@@ -620,10 +645,10 @@ export async function createMetaPausedDraft(input: {
         link: input.linkUrl,
         message: input.primaryText,
         name: input.headline,
-        image_hash: imageHash,
+        picture: input.imageUrl,
       },
     },
-  ];
+  );
 
   let creative: { id: string };
   const creativeErrors: string[] = [];
@@ -649,7 +674,12 @@ export async function createMetaPausedDraft(input: {
   }
 
   if (!creativeCreated) {
-    throw new Error(`크리에이티브 생성 실패: ${creativeErrors.join(" | ").slice(0, 1800)}`);
+    const uploadHint = imageUploadError
+      ? ` | adimages_upload=${imageUploadError}`
+      : "";
+    throw new Error(
+      `크리에이티브 생성 실패: ${creativeErrors.join(" | ").slice(0, 1800)}${uploadHint}`.slice(0, 2000),
+    );
   }
 
   if (!creative.id) throw new Error("Meta 크리에이티브 생성에 실패했습니다.");
