@@ -32,9 +32,9 @@ export type MetaPage = {
 };
 
 function getMetaConfig() {
-  const appId = process.env.META_APP_ID || "";
-  const appSecret = process.env.META_APP_SECRET || "";
-  const redirectUri = process.env.META_REDIRECT_URI || "";
+  const appId = (process.env.META_APP_ID || "").trim();
+  const appSecret = (process.env.META_APP_SECRET || "").trim();
+  const redirectUri = (process.env.META_REDIRECT_URI || "").trim();
   const graphVersion = process.env.META_GRAPH_VERSION || "v22.0";
   const stateSecret =
     process.env.META_STATE_SECRET ||
