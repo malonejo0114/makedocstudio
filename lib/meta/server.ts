@@ -417,8 +417,12 @@ export async function createMetaPausedDraft(input: {
 
   let campaign: { id: string } | null = null;
   let resolvedObjective: CampaignObjective = requestedObjective;
+  let resolvedBudgetSharingFlag: string | number | boolean = false;
 
-  const objectiveCandidates = [requestedObjective];
+  const objectiveCandidates = Array.from(
+    new Set<CampaignObjective>([requestedObjective, "OUTCOME_TRAFFIC"]),
+  );
+  const budgetSharingCandidates: Array<string | number | boolean> = [false, 0, "false", "0", true, 1];
   const specialCategoryCandidates = Array.from(
     new Map(
       [specialAdCategories, specialAdCategories.length === 1 && specialAdCategories[0] === "NONE" ? [] : null]
@@ -432,28 +436,35 @@ export async function createMetaPausedDraft(input: {
 
   for (const objectiveCandidate of objectiveCandidates) {
     for (const categoryCandidate of specialCategoryCandidates) {
-      try {
-        campaign = await graphRequest<{ id: string }>({
-          method: "POST",
-          path: `/act_${normalizedAdAccountId}/campaigns`,
-          accessToken: input.accessToken,
-          params: {
-            name: input.campaignName,
-            objective: objectiveCandidate,
-            status: "PAUSED",
-            is_adset_budget_sharing_enabled: false,
-            special_ad_categories: JSON.stringify(categoryCandidate),
-          },
-        });
-        resolvedObjective = objectiveCandidate;
-        campaignCreated = true;
-        break;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "알 수 없는 오류";
-        campaignErrors.push(
-          `objective=${objectiveCandidate}, special_ad_categories=${JSON.stringify(categoryCandidate)} => ${message}`,
-        );
+      for (const sharingCandidate of budgetSharingCandidates) {
+        try {
+          campaign = await graphRequest<{ id: string }>({
+            method: "POST",
+            path: `/act_${normalizedAdAccountId}/campaigns`,
+            accessToken: input.accessToken,
+            params: {
+              name: input.campaignName,
+              objective: objectiveCandidate,
+              status: "PAUSED",
+              buying_type: "AUCTION",
+              is_adset_budget_sharing_enabled: sharingCandidate,
+              special_ad_categories: JSON.stringify(categoryCandidate),
+            },
+          });
+          resolvedObjective = objectiveCandidate;
+          resolvedBudgetSharingFlag = sharingCandidate;
+          campaignCreated = true;
+          break;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "알 수 없는 오류";
+          campaignErrors.push(
+            `objective=${objectiveCandidate}, special_ad_categories=${JSON.stringify(
+              categoryCandidate,
+            )}, is_adset_budget_sharing_enabled=${String(sharingCandidate)} => ${message}`,
+          );
+        }
       }
+      if (campaignCreated) break;
     }
     if (campaignCreated) break;
   }
@@ -465,31 +476,47 @@ export async function createMetaPausedDraft(input: {
   if (!campaign || !campaign.id) throw new Error("Meta 캠페인 생성에 실패했습니다.");
 
   let adset: { id: string };
-  try {
-    const optimizationGoal = resolvedObjective === "OUTCOME_TRAFFIC" ? "LINK_CLICKS" : "REACH";
+  const optimizationGoalCandidates =
+    resolvedObjective === "OUTCOME_TRAFFIC"
+      ? ["LINK_CLICKS", "LANDING_PAGE_VIEWS", "REACH"]
+      : ["REACH"];
+  const adsetErrors: string[] = [];
+  let adsetCreated = false;
+  adset = { id: "" };
 
-    adset = await graphRequest<{ id: string }>({
-      method: "POST",
-      path: `/act_${normalizedAdAccountId}/adsets`,
-      accessToken: input.accessToken,
-      params: {
-        name: input.adSetName,
-        campaign_id: campaign.id,
-        daily_budget: Math.max(100, Math.floor(input.dailyBudget ?? config.defaultDailyBudget)),
-        billing_event: "IMPRESSIONS",
-        optimization_goal: optimizationGoal,
-        targeting: JSON.stringify({
-          geo_locations: { countries: countryCodes.length > 0 ? countryCodes : ["KR"] },
-          age_min: ageMin,
-          age_max: ageMax,
-        }),
-        status: "PAUSED",
-      },
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "알 수 없는 오류";
-    throw new Error(`광고세트 생성 실패: ${message}`);
+  for (const optimizationGoal of optimizationGoalCandidates) {
+    try {
+      adset = await graphRequest<{ id: string }>({
+        method: "POST",
+        path: `/act_${normalizedAdAccountId}/adsets`,
+        accessToken: input.accessToken,
+        params: {
+          name: input.adSetName,
+          campaign_id: campaign.id,
+          daily_budget: Math.max(100, Math.floor(input.dailyBudget ?? config.defaultDailyBudget)),
+          billing_event: "IMPRESSIONS",
+          optimization_goal: optimizationGoal,
+          bid_strategy: "LOWEST_COST_WITHOUT_CAP",
+          is_adset_budget_sharing_enabled: resolvedBudgetSharingFlag,
+          destination_type: "WEBSITE",
+          targeting: JSON.stringify({
+            geo_locations: { countries: countryCodes.length > 0 ? countryCodes : ["KR"] },
+            age_min: ageMin,
+            age_max: ageMax,
+          }),
+          status: "PAUSED",
+        },
+      });
+      adsetCreated = true;
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      adsetErrors.push(`optimization_goal=${optimizationGoal} => ${message}`);
+    }
+  }
+
+  if (!adsetCreated) {
+    throw new Error(`광고세트 생성 실패: ${adsetErrors.join(" | ").slice(0, 1800)}`);
   }
 
   if (!adset.id) throw new Error("Meta 광고세트 생성에 실패했습니다.");
@@ -529,40 +556,64 @@ export async function createMetaPausedDraft(input: {
     throw new Error("이미지 업로드는 성공했지만 image_hash를 받지 못했습니다.");
   }
 
-  const objectStorySpec: Record<string, unknown> = {
+  const baseObjectStorySpec: Record<string, unknown> = {
     page_id: input.pageId,
-    link_data: {
-      link: input.linkUrl,
-      message: input.primaryText,
-      name: input.headline,
-      image_hash: imageHash,
-      call_to_action: {
-        type: "LEARN_MORE",
-        value: { link: input.linkUrl },
-      },
-    },
   };
-
   const instagramActorId = (input.instagramActorId || "").trim();
   if (instagramActorId && /^\d{5,}$/.test(instagramActorId)) {
-    objectStorySpec.instagram_actor_id = instagramActorId;
+    baseObjectStorySpec.instagram_actor_id = instagramActorId;
   }
 
-  let creative: { id: string };
-  try {
-    creative = await graphRequest<{ id: string }>({
-      method: "POST",
-      path: `/act_${normalizedAdAccountId}/adcreatives`,
-      accessToken: input.accessToken,
-      params: {
-        name: `${input.adName} Creative`,
-        object_story_spec: JSON.stringify(objectStorySpec),
+  const creativeSpecCandidates: Array<Record<string, unknown>> = [
+    {
+      ...baseObjectStorySpec,
+      link_data: {
+        link: input.linkUrl,
+        message: input.primaryText,
+        name: input.headline,
+        image_hash: imageHash,
+        call_to_action: {
+          type: "LEARN_MORE",
+          value: { link: input.linkUrl },
+        },
       },
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "알 수 없는 오류";
-    throw new Error(`크리에이티브 생성 실패: ${message}`);
+    },
+    {
+      ...baseObjectStorySpec,
+      link_data: {
+        link: input.linkUrl,
+        message: input.primaryText,
+        name: input.headline,
+        image_hash: imageHash,
+      },
+    },
+  ];
+
+  let creative: { id: string };
+  const creativeErrors: string[] = [];
+  let creativeCreated = false;
+  creative = { id: "" };
+  for (const [index, creativeSpec] of creativeSpecCandidates.entries()) {
+    try {
+      creative = await graphRequest<{ id: string }>({
+        method: "POST",
+        path: `/act_${normalizedAdAccountId}/adcreatives`,
+        accessToken: input.accessToken,
+        params: {
+          name: `${input.adName} Creative`,
+          object_story_spec: JSON.stringify(creativeSpec),
+        },
+      });
+      creativeCreated = true;
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      creativeErrors.push(`candidate=${index + 1} => ${message}`);
+    }
+  }
+
+  if (!creativeCreated) {
+    throw new Error(`크리에이티브 생성 실패: ${creativeErrors.join(" | ").slice(0, 1800)}`);
   }
 
   if (!creative.id) throw new Error("Meta 크리에이티브 생성에 실패했습니다.");
