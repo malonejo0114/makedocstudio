@@ -2,6 +2,16 @@
 
 create extension if not exists pgcrypto;
 
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+as $fn$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$fn$;
+
 create table if not exists public.user_meta_connections (
   user_id uuid primary key references auth.users(id) on delete cascade,
   meta_user_id text,
