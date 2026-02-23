@@ -66,6 +66,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if (parsed.data.objective && parsed.data.objective !== "OUTCOME_TRAFFIC") {
+      return NextResponse.json(
+        {
+          error:
+            "현재 자동 초안 생성은 트래픽 목표만 지원합니다. 리드/판매 목표는 픽셀/전환 이벤트 등 추가 설정 UI가 준비된 뒤 지원됩니다.",
+        },
+        { status: 400 },
+      );
+    }
+
     requestSnapshot = parsed.data;
     generationId = parsed.data.generationId;
 

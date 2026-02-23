@@ -49,7 +49,7 @@ type ProjectPayload = {
   generations: ProjectGeneration[];
 };
 
-type MetaObjective = "OUTCOME_TRAFFIC" | "OUTCOME_LEADS" | "OUTCOME_SALES";
+type MetaObjective = "OUTCOME_TRAFFIC";
 
 type MetaPublishDraft = {
   campaignName: string;
@@ -527,8 +527,6 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
                       className="w-full rounded-xl border border-black/10 px-3 py-2 text-sm"
                     >
                       <option value="OUTCOME_TRAFFIC">트래픽</option>
-                      <option value="OUTCOME_LEADS">리드</option>
-                      <option value="OUTCOME_SALES">판매</option>
                     </select>
                   </label>
                   <label className="space-y-1 text-xs font-medium text-black/65">

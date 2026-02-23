@@ -103,8 +103,10 @@ export async function PATCH(request: Request) {
     const updatePayload: Record<string, unknown> = {};
     if (parsed.data.adAccountId) updatePayload.ad_account_id = parsed.data.adAccountId.trim();
     if (parsed.data.pageId) updatePayload.page_id = parsed.data.pageId.trim();
-    if (parsed.data.instagramActorId !== undefined)
-      updatePayload.instagram_actor_id = parsed.data.instagramActorId?.trim() || null;
+    if (parsed.data.instagramActorId !== undefined) {
+      const actor = (parsed.data.instagramActorId || "").trim();
+      updatePayload.instagram_actor_id = actor && /^\d{5,}$/.test(actor) ? actor : null;
+    }
     if (parsed.data.defaultLinkUrl !== undefined)
       updatePayload.default_link_url = parsed.data.defaultLinkUrl?.trim() || null;
 
