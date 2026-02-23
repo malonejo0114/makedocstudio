@@ -8,6 +8,17 @@ export async function getAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+async function getAccessTokenWithRefresh(): Promise<string | null> {
+  const supabase = getSupabaseBrowserClient();
+  const { data } = await supabase.auth.getSession();
+  if (data.session?.access_token) {
+    return data.session.access_token;
+  }
+
+  const refreshed = await supabase.auth.refreshSession();
+  return refreshed.data.session?.access_token ?? null;
+}
+
 export async function getCurrentUser() {
   const supabase = getSupabaseBrowserClient();
   const { data } = await supabase.auth.getUser();
@@ -23,18 +34,29 @@ export async function authFetchJson<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<T> {
-  const token = await getAccessToken();
+  let token = await getAccessTokenWithRefresh();
   if (!token) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const makeRequest = async (accessToken: string) => {
+    const headers = new Headers(init?.headers ?? {});
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    return fetch(input, {
+      ...init,
+      headers,
+    });
+  };
+
+  let response = await makeRequest(token);
+
+  if (response.status === 401) {
+    const refreshedToken = await getAccessTokenWithRefresh();
+    if (refreshedToken && refreshedToken !== token) {
+      token = refreshedToken;
+      response = await makeRequest(token);
+    }
+  }
 
   const contentType = response.headers.get("content-type") || "";
   let payload: unknown = null;
