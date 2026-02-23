@@ -404,13 +404,48 @@ export async function createMetaPausedDraft(input: {
 
   if (!adset.id) throw new Error("Meta 광고세트 생성에 실패했습니다.");
 
+  // Upload image to ad account and use returned image_hash for creative.
+  let imageHash = "";
+  try {
+    const imageUpload = await graphRequest<{
+      images?: Record<string, { hash?: string }>;
+      hash?: string;
+      image_hash?: string;
+    }>({
+      method: "POST",
+      path: `/act_${normalizedAdAccountId}/adimages`,
+      accessToken: input.accessToken,
+      params: {
+        url: input.imageUrl,
+      },
+    });
+
+    imageHash = (imageUpload.image_hash || imageUpload.hash || "").trim();
+    if (!imageHash && imageUpload.images && typeof imageUpload.images === "object") {
+      for (const value of Object.values(imageUpload.images)) {
+        const hash = (value?.hash || "").trim();
+        if (hash) {
+          imageHash = hash;
+          break;
+        }
+      }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    throw new Error(`이미지 업로드 실패: ${message}`);
+  }
+
+  if (!imageHash) {
+    throw new Error("이미지 업로드는 성공했지만 image_hash를 받지 못했습니다.");
+  }
+
   const objectStorySpec: Record<string, unknown> = {
     page_id: input.pageId,
     link_data: {
       link: input.linkUrl,
       message: input.primaryText,
       name: input.headline,
-      image_url: input.imageUrl,
+      image_hash: imageHash,
       call_to_action: {
         type: "LEARN_MORE",
         value: { link: input.linkUrl },
